@@ -1,0 +1,188 @@
+mkdisk -size=10 -unit=M
+mkdisk -size=12
+mkdisk -size=10 -unit=M
+mkdisk -size=12
+mkdisk -size=15
+mkdisk -size=15
+mkdisk -size=10
+mkdisk -size=12
+
+# ERROR NO EXISTE EL DISCO A ELIMINAR
+rmdisk -driveletter=X
+rmdisk -driveletter=Y
+pause
+
+rmdisk -driveletter=F
+rmdisk -driveletter=G
+
+
+# ERROR NO EXISTE EL DISCO PARA PARTICIONAR
+fdisk -type=P -driveletter=X -size=500 -unit=K -name=error1
+fdisk -type=P -driveletter=Y -size=500 -unit=K -name=error2
+pause
+
+
+fdisk -type=P -driveletter=A -size=500 -unit=K -name=particion1
+fdisk -type=P -driveletter=A -size=700 -unit=K -name=particion2
+fdisk -type=P -driveletter=A -size=900 -unit=K -name=particion3
+fdisk -type=E -driveletter=A -size=900 -unit=K -name=particion4
+
+fdisk -type=P -driveletter=B -size=100 -unit=K -name=particion1
+fdisk -type=P -driveletter=B -size=200 -unit=K -name=particion2
+fdisk -type=P -driveletter=B -size=100 -unit=K -name=particion3
+fdisk -type=E -driveletter=B -size=200 -unit=K -name=particion4
+
+fdisk -type=P -driveletter=C -size=100 -unit=K -name=particion1
+fdisk -type=P -driveletter=C -size=200 -unit=K -name=particion2
+
+fdisk -type=P -driveletter=D -size=100 -unit=K -name=particion1
+fdisk -type=E -driveletter=D -size=200 -unit=K -name=particion2
+# ERROR AL CREAR LAS PARTICIONES
+fdisk -type=E -driveletter=D -size=100 -unit=K -name=particion3
+fdisk -type=P -driveletter=D -size=12 -unit=M -name=particion4
+pause
+
+fdisk -add=200 -unit=K -driveletter=A -name=particion1
+fdisk -add=-200 -unit=K -driveletter=A -name=particion3
+fdisk -delete=full -driveletter=A -name=particion4
+fdisk -add=100 -unit=K -driveletter=B -name=particion1
+fdisk -add=100 -unit=K -driveletter=B -name=particion3
+fdisk -add=100 -unit=K -driveletter=C -name=particion1
+
+
+mount -driveletter=A -name=particion1
+mount -driveletter=A -name=particion2
+mount -driveletter=A -name=particion3
+mount -driveletter=B -name=particion1
+mount -driveletter=C -name=particion1
+
+# ERROR NO EXISTE EL ID
+unmount -id=X151
+unmount -id=Y251
+pause 
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+unmount -id=A251
+unmount -id=A351
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+mkfs -type=full -id=A151 -fs=3fs
+mkfs -type=full -id=B151 -fs=2fs
+mkfs -type=full -id=C151 -fs=3fs
+pause
+
+rep -id=A151 -path=reportes/MBRPE.svg -name=mbr
+rep -id=A151 -path=reportes/disk.svg -name=disk
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+# ERROR NO EXISTE EL USUARIO
+login -user=user -pass=123 -id=A151
+pause 
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+login -user=root -pass=123 -id=A151
+
+mkgrp -name=grupo1
+mkgrp -name=grupo2
+mkgrp -name=grupo3
+mkgrp -name=grupo4
+mkgrp -name=grupo5
+mkgrp -name=grupo6
+mkgrp -name=grupo7
+mkgrp -name=grupo8
+mkgrp -name=grupo9
+pause
+
+rmgrp -name=grupo2
+rmgrp -name=grupo4
+rmgrp -name=grupo6
+rmgrp -name=grupo8
+
+mkusr -user=user1 -pass=123 -grp=grupo1
+mkusr -user=user2 -pass=123 -grp=grupo1
+
+# ERROR USUARIO REPETIDO
+mkusr -user=user1 -pass=123 -grp=grupo3
+pause
+
+# ERROR NO EXISTE EL GRUPO
+mkusr -user=user3 -pass=123 -grp=grupo8
+pause
+
+# ELIMINANDO USER 2 Y GRUPO9
+rmusr -user=user2
+rmgrp -name=grupo9
+
+# ERROR USUARIO ELIMINADO
+rmusr -user=user2
+pause
+
+# ERROR GRUPO ELIMINADO
+rmgrp -name=grupo9
+pause
+
+logout
+
+#ERROR NO HAY SESION INICIADA
+logout 
+pause 
+
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+login -user=user1 -pass=123 -id=A151
+# ERROR USUARIO NO TIENE PERMISOS
+mkusr -user=user2
+mkgrp -name=grupo9
+logout
+
+
+
+# =====COLOCAR LOS DÍGITOS DEL CARNET=====
+login -user=root -pass=123 -id=A151
+
+# =====BLOQUE INDIRECTO=====
+mkfile -size=1000 -path=/home/user/docs/a.txt -r
+mkfile -size=15 -path=/home/user/docs/c.txt -r
+
+# ERROR DIRECTORIO NO CREADO
+mkfile -path="/home/mis documentos/archivo 1.txt"
+pause
+
+cat -file1=/home/user/docs/c.txt
+
+# SOBRESCRITURA DEL ARCHIVO - el usuario deberá confirmar la sobrescritura
+mkfile -size=45 -path=/home/user/docs/c.txt  
+ 
+cat -file1=/home/user/docs/c.txt
+
+# ERROR NO EXISTE EL ARCHIVO
+cat -file1=/home/user/docs/b.txt
+pause
+
+mkdir -r -path=/home/user/docs/tareas
+mkdir -r -path=/home/user/docs/proyectos
+
+# ERROR NO EXISTE LA CARPETA ARCHVIOS
+mkdir -path=/home/user/archivos/proyecto1
+pause
+
+
+# ==== COLOCAR LOS DIGITOS DEL CARNET Y COMPLETAR LA RUTA ====
+rep -id=A151 -path=reportes/inode_test.svg -name=inode
+rep -id=A151 -path=reportes/block_test.svg -name=block
+rep -id=A151 -path=reportes/tree_test.svg -name=tree
+rep -id=A151 -path=reportes/sb_test.svg -name=sb
+rep -id=A151 -path=reportes/bm_inode_test.txt -name=bm_inode
+rep -id=A151 -path=reportes/bm_block_test.txt -name=bm_block
+rep -id=A151 -path=reportes/journal_test.svg -name=JourNALING
+rep -id=A151 -path=reportes/file_small1.txt -ruta=/home/user/docs/a.txt -name=file
+rep -id=A151 -path=reportes/ls_docs.svg -ruta=/home/user/docs -name=ls
+
+
+find -path=/ -name=*
+find -path=/home/user/docs -name=*
+
+logout
+
+# ERROR AL CERRAR SESIÓN
+logout

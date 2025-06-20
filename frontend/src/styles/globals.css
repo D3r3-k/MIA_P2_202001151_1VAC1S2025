@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Gray custom */
+  --color-gray-50: #f9f9f9;
+  --color-gray-100: #e3e3e3;
+  --color-gray-200: #cfcfcf;
+  --color-gray-300: #b1b1b1;
+  --color-gray-400: #8e8e8e;
+  --color-gray-500: #3b3b3b;
+  --color-gray-600: #2e2e2e;
+  --color-gray-700: #212121;
+  --color-gray-800: #161616;
+  --color-gray-900: #0b0b0b;
+  --color-gray-950: #050505;
+  /* Corinto custom */
+  --color-red-50: #f8e6ec;
+  --color-red-100: #f2c2d1;
+  --color-red-200: #e98ba7;
+  --color-red-300: #e05a7e;
+  --color-red-400: #d62c5a;
+  --color-red-500: #b11245;
+  --color-red-600: #8a0e36;
+  --color-red-700: #6a0b2a;
+  --color-red-800: #4a071d;
+  --color-red-900: #2a0310;
+  --color-red-950: #180109;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #e5e7eb;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: initial;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #000 !important;
+  color: #fff !important;
+  background-color: transparent !important;
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
