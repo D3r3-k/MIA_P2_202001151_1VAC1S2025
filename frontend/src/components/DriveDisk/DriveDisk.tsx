@@ -1,12 +1,21 @@
 "use client";
 
-import { DriveDiskProps } from "@/types/GlobalTypes";
 import { HardDrive } from "lucide-react";
+import Link from "next/link";
 
-export default function DriveDisk({ name = 'Disco Duro',
+interface DriveDiskProps {
+    name: string;
+    size: string;
+    path: string;
+    fit: 'FF' | 'BF' | 'WF';
+    partitions: number;
+}
+
+export default function DriveDisk({
+    name = 'Disco Duro',
     size = '500 GB',
-    type = 'HDD',
-    status = 'active',
+    path = name[name.length - 1] + ".dsk",
+    fit = 'FF',
     partitions = 1
 }: DriveDiskProps) {
     // Hooks
@@ -14,57 +23,62 @@ export default function DriveDisk({ name = 'Disco Duro',
     // Effects
     // Handlers
     // Functions
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'active': return 'text-green-600 bg-green-100';
-            case 'inactive': return 'text-yellow-600 bg-yellow-100';
-            case 'error': return 'text-red-600 bg-red-100';
-            default: return 'text-gray-600 bg-gray-100';
-        }
-    };
-
-    const getStatusText = (status: "active" | "inactive" | "error") => {
-        switch (status) {
-            case 'active': return 'Activo';
-            case 'inactive': return 'Inactivo';
-            case 'error': return 'Error';
-        }
-    };
     // Renders
     return (
-        <div className="disk-item group flex flex-col items-center bg-white rounded-xl shadow-md p-6 transition-all duration-300 hover:shadow-lg w-64 border border-gray-200 hover:border-corinto-300 cursor-pointer">
-            <div className="relative mb-4">
-                <div className="w-16 h-16 bg-corinto-100 rounded-full flex items-center justify-center group-hover:bg-corinto-200 transition-colors duration-300">
-                    <HardDrive className="w-8 h-8 text-corinto-800" />
+        <Link
+            href={`/drives/${path}`}
+            className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 hover:border-corinto-600/70 transition-all duration-200 hover:scale-105 group cursor-pointer border rounded-lg shadow-lg">
+            <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="relative">
+                        <div className="w-14 h-14 bg-red-500/20 rounded-full flex items-center justify-center shadow">
+                            <HardDrive className="w-7 h-7 text-red-400" />
+                        </div>
+                        <div className={`absolute top-0 right-0 w-4 h-4 rounded-full border-2 border-gray-800 bg-green-500`} />
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold">
+                            {path}
+                        </p>
+                    </div>
                 </div>
-                <div
-                    className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${status === "active"
-                        ? "bg-green-500"
-                        : status === "inactive"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                ></div>
-            </div>
 
-            <div className="text-center space-y-1 w-full">
-                <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
-                <p className="text-sm text-gray-600">{size} • {type}</p>
-                <div className="flex items-center justify-center space-x-2">
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(status)}`}>
-                        {getStatusText(status)}
-                    </span>
+                <div className="space-y-3">
+                    <div>
+                        <h3 className="font-semibold text-white text-lg group-hover:text-red-400 transition-colors">
+                            {name}
+                        </h3>
+                        <p className="text-gray-400 text-sm">
+                            {size} • {path}
+                        </p>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm mt-2">
+                        <span className="text-gray-400">Tipo de Fit:</span>
+                        <span className={`font-medium capitalize text-green-400`}>
+                            {
+                                fit === 'FF'
+                                    ? 'Primer Ajuste'
+                                    : fit === 'BF'
+                                        ? 'Mejor Ajuste'
+                                        : fit === 'WF'
+                                            ? 'Peor Ajuste'
+                                            : 'Desconocido'
+                            }
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-700 mt-3">
+                        <div className="flex items-center space-x-2">
+                            <div className={`w-2.5 h-2.5 rounded-full`} />
+                            <span className="text-sm text-gray-400">Particiones</span>
+                        </div>
+                        <span className="text-sm text-white font-semibold">
+                            {partitions}
+                        </span>
+                    </div>
                 </div>
-                <p className="text-xs text-gray-500">
-                    {partitions} partición{partitions !== 1 ? "es" : ""}
-                </p>
             </div>
-
-            <div className="w-full pt-4 mt-4 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button className="w-full text-sm text-corinto-800 hover:text-corinto-900 font-medium">
-                    Ver detalles
-                </button>
-            </div>
-        </div>
+        </Link>
     )
 }

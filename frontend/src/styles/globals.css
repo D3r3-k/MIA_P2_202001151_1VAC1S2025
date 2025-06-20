@@ -13,19 +13,19 @@
   --color-gray-700: #212121;
   --color-gray-800: #161616;
   --color-gray-900: #0b0b0b;
-  --color-gray-950: #050505;
+  --color-gray-950: #0c0c0c;
   /* Corinto custom */
-  --color-red-50: #f8e6ec;
-  --color-red-100: #f2c2d1;
-  --color-red-200: #e98ba7;
-  --color-red-300: #e05a7e;
-  --color-red-400: #d62c5a;
-  --color-red-500: #b11245;
-  --color-red-600: #8a0e36;
-  --color-red-700: #6a0b2a;
-  --color-red-800: #4a071d;
-  --color-red-900: #2a0310;
-  --color-red-950: #180109;
+  --color-corinto-50: #f8e6ec;
+  --color-corinto-100: #f2c2d1;
+  --color-corinto-200: #e98ba7;
+  --color-corinto-300: #e05a7e;
+  --color-corinto-400: #d62c5a;
+  --color-corinto-500: #b11245;
+  --color-corinto-600: #8a0e36;
+  --color-corinto-700: #6a0b2a;
+  --color-corinto-800: #4a071d;
+  --color-corinto-900: #2a0310;
+  --color-corinto-950: #180109;
 }
 
 .scrollbar-thin {

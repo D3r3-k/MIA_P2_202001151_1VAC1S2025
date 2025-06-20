@@ -16,7 +16,6 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/login",
-    "/drives/:driveletter*",
-    "/drives/:driveletter/:partition_id*",
+    "/drives/:driveletter/:partition_id",
   ],
 };

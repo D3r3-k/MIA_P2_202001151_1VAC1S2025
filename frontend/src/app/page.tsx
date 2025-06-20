@@ -52,6 +52,11 @@ export default function HomePage() {
     document.body.removeChild(a);
   };
   const handleFileNew = () => {
+    if (!consoleInput && !response) {
+      setConsoleInput("");
+      setResponse("");
+      return;
+    }
     if (!confirm("¿Estás seguro de que quieres crear un nuevo archivo? Se perderá el contenido actual.")) {
       return;
     }

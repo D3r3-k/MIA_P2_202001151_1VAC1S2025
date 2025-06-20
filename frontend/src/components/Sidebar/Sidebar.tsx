@@ -25,7 +25,7 @@ const menuItems = [
 
 export default function Sidebar() {
     // Hooks
-    const { isAuthenticated, logout, userData } = useMia();
+    const { systemState, isAuthenticated, logout, userData } = useMia();
     const pathname = usePathname();
     // States
     // Effects
@@ -129,8 +129,16 @@ export default function Sidebar() {
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-gray-400">Backend</span>
                             <div className='flex items-center space-x-2'>
-                                <span className="text-xs font-medium text-red-400">off</span>
-                                <div className="w-2 h-2 bg-red-400 rounded-full opacity-90 flex-shrink-0" />
+                                {
+                                    systemState
+                                        ? <span className="text-xs font-medium text-green-400">Activo</span>
+                                        : <span className="text-xs font-medium text-red-400">Inactivo</span>
+                                }
+                                {
+                                    systemState
+                                        ? <div className="w-2 h-2 bg-green-400 rounded-full" />
+                                        : <div className="w-2 h-2 bg-red-400 rounded-full" />
+                                }
                             </div>
                         </div>
                     </div>

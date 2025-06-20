@@ -29,11 +29,6 @@ export default function LoginPage() {
       searchParams.set("partition_id", loginData.partitionId);
     }
   }, [loginData.partitionId]);
-  useEffect(() => {
-    if (errorMsg) {
-      alert(errorMsg);
-    }
-  }, [errorMsg]);
   // Handlers
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +40,14 @@ export default function LoginPage() {
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setLoginData((prev) => ({ ...prev, [name]: value }));
+    let newValue = value;
     if (name === "partitionId") {
+      newValue = value.toUpperCase();
       const searchParams = new URLSearchParams();
-      searchParams.set("partition_id", value);
+      searchParams.set("partition_id", newValue);
       window.history.replaceState({}, "", `?${searchParams.toString()}`);
     }
+    setLoginData((prev) => ({ ...prev, [name]: newValue }));
   };
   // Functions
   // Renders

@@ -2,13 +2,14 @@
 
 import { MiaContextType, UserData } from "@/types/AuthTypes";
 import { redirect } from "next/navigation";
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 
 export const MiaContext = createContext<MiaContextType | undefined>(undefined);
 
 export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     // Hooks
     // States
+    const [systemState, setSystemState] = useState(false)
     const [loading, setLoading] = useState<boolean>(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     // ? Drivers
@@ -18,6 +19,23 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [userData, setUserData] = useState<UserData | null>(null);
     // Effects
+    useEffect(() => {
+        const fetchSystemStatus = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setSystemState(data.status);
+                } else {
+                    throw new Error("Error al obtener el estado del sistema.");
+                }
+            } catch (error: any) {
+                setErrorMsg(error.message);
+            }
+        };
+        fetchSystemStatus();
+    }, []);
+
     // Handlers
     // Functions
     const executeCommand = async (command: string) => {
@@ -39,7 +57,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
             }
         } catch (error: any) {
             setErrorMsg(`Error del servidor. ${error.message}`);
-            return `Error: ${error.message}`;
+            return error.message;
         } finally {
             setLoading(false);
         }
@@ -67,7 +85,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
                 throw new Error("Error al iniciar sesión. Verifica tus credenciales.");
             }
         } catch (error: any) {
-            setErrorMsg(`Error del servidor. ${error.message}`);
+            setErrorMsg(error.message);
         } finally {
             setLoading(false);
         }
@@ -79,7 +97,16 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     }
     // Renders
     return (
-        <MiaContext.Provider value={{ isAuthenticated, userData, login, logout, loading, errorMsg, executeCommand }}>
+        <MiaContext.Provider value={{
+            systemState,
+            isAuthenticated,
+            userData,
+            login,
+            logout,
+            loading,
+            errorMsg,
+            executeCommand
+        }}>
             {children}
         </MiaContext.Provider>
     );

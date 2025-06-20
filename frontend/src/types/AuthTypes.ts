@@ -12,6 +12,7 @@ export interface UserData {
 }
 
 export interface MiaContextType {
+  systemState: boolean;
   executeCommand: (command: string) => Promise<string>;
   isAuthenticated: boolean;
   login: ({ partition_id, username, password }: LoginParams) => Promise<void>;
