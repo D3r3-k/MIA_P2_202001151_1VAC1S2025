@@ -1,7 +1,7 @@
 "use client";
 import { useMia } from "@/hooks/useMia";
 import { User } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
@@ -30,13 +30,17 @@ export default function LoginPage() {
     }
   }, [loginData.partitionId]);
   // Handlers
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({
+    const loginres = await login({
       partition_id: loginData.partitionId,
       username: loginData.username,
       password: loginData.password,
     });
+    if (loginres) {
+      redirect("/drives");
+    }
+
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

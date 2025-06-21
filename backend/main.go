@@ -1,46 +1,40 @@
 package main
 
 import (
-	"MIA_PI_202001151_1VAC1S2025/cmd"
-	"MIA_PI_202001151_1VAC1S2025/lib"
-	"MIA_PI_202001151_1VAC1S2025/utils"
-	"bufio"
+	router "MIA_PI_202001151_1VAC1S2025/routes"
 	"fmt"
-	"os"
-	"strings"
+	"log"
+	"net/http"
+
+	"github.com/rs/cors"
 )
 
 func main() {
-	fmt.Printf("%-21s╔═════════════════════════════╗\n", "")
-	fmt.Println("╔════════════════════╣ MIA PI 202001151 1VAC1S2025 ╠════════════════════╗")
-	fmt.Println("║                    ╚═════════════════════════════╝                    ║")
-	fmt.Println("║ [help] para ver los comandos disponibles                              ║")
-	fmt.Println("║ [cls] para limpiar la pantalla                                        ║")
-	fmt.Println("║ [exit] para salir                                                     ║")
-	fmt.Println("╚═══════════════════════════════════════════════════════════════════════╝")
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		fmt.Print(">>> ")
-		scanner.Scan()
-		input := strings.TrimSpace(scanner.Text())
-		comando, parametros := lib.GetCommands(input)
-		comando = strings.ToLower(comando)
-		comando = strings.TrimSpace(comando)
-		switch comando {
-		case "exit":
-			utils.ShowMessage("Saliendo del programa...", false)
-			return
-		case "execute":
-			cmd.Execute(parametros)
-			continue
-		case "cls":
-			cmd.Cls()
-			continue
-		case "help":
-			cmd.Help()
-			continue
-		default:
-			lib.AnalyzeCommand(comando, parametros)
-		}
-	}
+	// Configuración del puerto y el logger
+	PORT := "3001"
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	// Inicialización del router
+	r := router.SetupRouter()
+	// Configuración del logger para mostrar el encabezado
+	fmt.Print(encabezado(PORT))
+	// Configuración de CORS
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	})
+	// Iniciar el servidor HTTP con CORS
+	log.Fatal(http.ListenAndServe(":"+PORT, c.Handler(r)))
+}
+
+func encabezado(PORT string) string {
+	header := ""
+	header += fmt.Sprintf("%-21s╔═══════════════════════════════╗\n", "")
+	header += "╔════════════════════╣ MIA P1F2 202001151 1VAC1S2025 ╠══════════════════╗\n"
+	header += "║                    ╚═══════════════════════════════╝                  ║\n"
+	header += "║ Escuchando en el puerto " + PORT + "...                                       ║\n"
+	header += "╚═══════════════════════════════════════════════════════════════════════╝\n"
+	return header
+
 }

@@ -7,9 +7,10 @@ interface CodeEditorProps {
     editable?: boolean;
     value?: string;
     onChange?: (value: string) => void;
+    size?: "small" | "medium" | "large";
 }
 
-export default function CodeEditor({ editable, value, onChange }: CodeEditorProps) {
+export default function CodeEditor({ editable, value, onChange, size }: CodeEditorProps) {
     // Hooks
     // States
     // Effects
@@ -20,11 +21,12 @@ export default function CodeEditor({ editable, value, onChange }: CodeEditorProp
         <ReactCodeMirror
             value={value}
             onChange={onChange}
-            height="600px"
+            height={size === "small" ? "200px" : size === "medium" ? "300px" : "400px"}
             theme={vscodeDark}
             editable={editable}
+            readOnly={!editable}
             extensions={[StreamLanguage.define(python)]}
-            className="text-sm scrollbar-thin dark:scrollbar-thin"
+            className="text-sm scrollbar-thin dark:scrollbar-thin flex-1 rounded-lg"
             placeholder={editable ? "Escribe tu código aquí..." : "Salida del programa..."}
         />
     )

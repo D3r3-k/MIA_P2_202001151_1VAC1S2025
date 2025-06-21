@@ -6,17 +6,17 @@ import Link from "next/link";
 interface DriveDiskProps {
     name: string;
     size: string;
-    path: string;
-    fit: 'FF' | 'BF' | 'WF';
+    fit: string;
     partitions: number;
+    path: string;
 }
 
 export default function DriveDisk({
-    name = 'Disco Duro',
-    size = '500 GB',
-    path = name[name.length - 1] + ".dsk",
-    fit = 'FF',
-    partitions = 1
+    name,
+    size,
+    fit,
+    partitions,
+    path
 }: DriveDiskProps) {
     // Hooks
     // States
@@ -26,7 +26,7 @@ export default function DriveDisk({
     // Renders
     return (
         <Link
-            href={`/drives/${path}`}
+            href={`/drives/${path.replace(".dsk", "")}`}
             className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 hover:border-corinto-600/70 transition-all duration-200 hover:scale-105 group cursor-pointer border rounded-lg shadow-lg">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -57,11 +57,11 @@ export default function DriveDisk({
                         <span className="text-gray-400">Tipo de Fit:</span>
                         <span className={`font-medium capitalize text-green-400`}>
                             {
-                                fit === 'FF'
+                                fit.toUpperCase() === 'F'
                                     ? 'Primer Ajuste'
-                                    : fit === 'BF'
+                                    : fit.toUpperCase() === 'B'
                                         ? 'Mejor Ajuste'
-                                        : fit === 'WF'
+                                        : fit.toUpperCase() === 'W'
                                             ? 'Peor Ajuste'
                                             : 'Desconocido'
                             }

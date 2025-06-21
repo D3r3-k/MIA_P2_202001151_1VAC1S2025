@@ -2,7 +2,7 @@
 
 import CodeEditor from "@/components/CodeEditor/CodeEditor";
 import { useMia } from "@/hooks/useMia";
-import { TerminalSquare } from "lucide-react";
+import { FileText, FolderOpen, Play, Save, Terminal, TerminalSquare, Trash2, Triangle } from "lucide-react";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -63,6 +63,10 @@ export default function HomePage() {
     setConsoleInput("");
     setResponse("");
   };
+  const handleClearConsole = () => {
+    setConsoleInput("");
+    setResponse("");
+  };
   // Renders
   return (
     <main className="flex-1 p-6 ml-72">
@@ -74,32 +78,84 @@ export default function HomePage() {
           Bienvenido a la consola de discos. Aquí puedes interactuar con el sistema de archivos, ejecutar comandos y gestionar particiones.
         </p>
       </div>
-      <div className="mb-6 flex justify-center">
-        <nav className="flex space-x-4 bg-gray-800 rounded-lg p-4 shadow-md">
-          <button
-            onClick={handleFileOpen}
-            className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-md hover:from-gray-800 hover:to-gray-700 transition-colors font-medium shadow cursor-pointer">
-            Abrir Archivo
-          </button>
-          <button
-            onClick={handleFileSave}
-            className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-md hover:from-gray-800 hover:to-gray-700 transition-colors font-medium shadow cursor-pointer">
-            Guardar Archivo
-          </button>
-          <button
-            onClick={handleFileNew}
-            className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-md hover:from-gray-800 hover:to-gray-700 transition-colors font-medium shadow cursor-pointer">
-            Nuevo Archivo
-          </button>
-        </nav>
-      </div>
-      <div className="flex space-x-6">
-        <div className="flex-1">
-          <div className="flex items-center mb-4">
-            <TerminalSquare className="text-gray-400 mr-2" />
-            <h2 className="text-xl font-semibold text-white">Consola</h2>
+      {/* Toolbar */}
+      <div className="bg-gray-800/30 border border-gray-700/50 rounded mb-6">
+        <div className="p-4">
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleFileOpen}
+              className="flex items-center px-4 py-2 rounded bg-gray-700/50 border border-gray-600 text-gray-300 hover:bg-gray-600/50 hover:text-white transition-colors cursor-pointer"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Abrir Archivo
+            </button>
+
+            <button
+              onClick={handleFileSave}
+              className="flex items-center px-4 py-2 rounded bg-gray-700/50 border border-gray-600 text-gray-300 hover:bg-gray-600/50 hover:text-white transition-colors cursor-pointer"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Guardar Salida
+            </button>
+
+            <button
+              onClick={handleFileNew}
+              className="flex items-center px-4 py-2 rounded bg-gray-700/50 border border-gray-600 text-gray-300 hover:bg-gray-600/50 hover:text-white transition-colors cursor-pointer"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Nueva Sesión
+            </button>
+
+            <button
+              onClick={handleClearConsole}
+              className="flex items-center px-4 py-2 rounded bg-red-900/20 border border-red-700/50 text-red-400 hover:bg-red-800/30 hover:text-red-300 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Limpiar
+            </button>
           </div>
-          <CodeEditor editable onChange={handleConsoleInputChange} value={consoleInput} />
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">
+        <div className="bg-gray-900/50 border-gray-700/50 border rounded-lg p-4 flex-1">
+          <div className="pb-3">
+            <h2 className="text-white flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-corinto-400" />
+              Salida de Consola
+            </h2>
+          </div>
+          <div className="p-0">
+            <CodeEditor editable={false} value={response} size="large" />
+          </div>
+        </div>
+        <div className="bg-gray-900/50 border-gray-700/50 border rounded-lg p-4 flex-1">
+          <div className="pb-3">
+            <h2 className="text-white flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-blue-400" />
+              Entrada de Comandos
+            </h2>
+          </div>
+          <div className="p-0 flex gap-4">
+            <CodeEditor editable onChange={handleConsoleInputChange} value={consoleInput} size="small" />
+            <div className="mt-2">
+              <button
+                onClick={handleExecuteCommand}
+                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white font-semibold shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:hover:bg-gradient-to-r disabled:from-green-500 disabled:to-green-700"
+                title="Ejecutar Comando"
+                aria-label="Ejecutar Comando"
+                disabled={!consoleInput.trim()}
+              >
+                <Play className="w-5 h-5" />
+                Ejecutar
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* <div className="flex-1">
+          <div className="flex items-center mb-4">
+          <TerminalSquare className="text-gray-400 mr-2" />
+          <h2 className="text-xl font-semibold text-white">Consola</h2>
+          </div>
           <div className="mt-4 flex justify-end">
             <button
               onClick={handleExecuteCommand}
@@ -113,8 +169,7 @@ export default function HomePage() {
             <TerminalSquare className="text-gray-400 mr-2" />
             <h2 className="text-xl font-semibold text-white">Salida</h2>
           </div>
-          <CodeEditor editable={false} value={response} />
-        </div>
+        </div> */}
       </div>
     </main>
   );

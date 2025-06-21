@@ -15,7 +15,7 @@ export default function Loading() {
         loading && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-                <div className="relative flex flex-col items-center justify-center bg-gradient-to-r animate-pulse from-gray-800/80 to-gray-700/60 rounded-xl p-4 border border-gray-700/40 shadow-2xl w-36">
+                <div className="relative flex flex-col items-center justify-center bg-gradient-to-r animate-pulse from-gray-800/80 to-gray-700/60 rounded-xl p-4 border border-gray-700/40 w-36">
                     <div className="relative">
                         <div className="absolute top-0 -left-2 transform translate-x-1/2 -translate-y-1/2">
                             <Loader size={24} className="text-red-500 animate-spin" />

@@ -60,8 +60,11 @@ export default function Sidebar() {
                         Navegación
                     </h3>
                     <nav className="space-y-2">
-                        {menuItems.map((item, index) => (
-                            <button
+                        {menuItems.map((item, index) => {
+                            if (item.path === '/login' && isAuthenticated) {
+                                return null; // Skip if the user is authenticated
+                            }
+                            return <button
                                 onClick={() => redirect(item.path)}
                                 key={index}
                                 className={`w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer
@@ -74,7 +77,7 @@ export default function Sidebar() {
                                 </div>
                                 {isActiveIcon(item.path)}
                             </button>
-                        ))}
+                        })}
                     </nav>
                 </div>
             </div>
@@ -89,16 +92,16 @@ export default function Sidebar() {
                                         <User size={24} className="text-gray-300" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-400">Usuario</p>
-                                        <p className="text-sm font-semibold text-white mb-1">{userData?.username}</p>
+                                        <p className="text-xs text-gray-400">Particion</p>
+                                        <p className="text-sm font-semibold text-white mb-1">{userData?.partition_id}</p>
                                         <div className="flex items-center space-x-4">
+                                            <div>
+                                                <span className="text-xs text-gray-400">Usuario</span>
+                                                <span className="block text-xs font-medium text-gray-200">{userData?.username}</span>
+                                            </div>
                                             <div>
                                                 <span className="text-xs text-gray-400">Grupo</span>
                                                 <span className="block text-xs font-medium text-gray-200">{userData?.group}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-gray-400">Permisos</span>
-                                                <span className="block text-xs font-medium text-gray-200">{userData?.permissions}</span>
                                             </div>
                                         </div>
                                     </div>

@@ -20,17 +20,48 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     const [userData, setUserData] = useState<UserData | null>(null);
     // Effects
     useEffect(() => {
+        const cookies = document.cookie.split(";").reduce((acc: Record<string, string>, cookie) => {
+            const [key, value] = cookie.trim().split("=");
+            acc[key] = value;
+            return acc;
+        }, {});
+        if (cookies.authToken) {
+            const userDataLocal = localStorage.getItem("userData");
+            if (userDataLocal) {
+                try {
+                    setUserData(JSON.parse(userDataLocal));
+                    setIsAuthenticated(true);
+                } catch (error) {
+                    console.error("Error al parsear userData desde localStorage:", error);
+                    setUserData(null);
+                    setIsAuthenticated(false);
+                }
+            }
+        }
+    }, []);
+
+    useEffect(() => {
         const fetchSystemStatus = async () => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/status`);
                 if (response.ok) {
                     const data = await response.json();
                     setSystemState(data.status);
+                    if (data.authToken.username != "") {
+                        setIsAuthenticated(true);
+                        setUserData(data.authToken);
+                        document.cookie = `authToken=true; path=/;`;
+                    } else {
+                        document.cookie = "authToken=; path=/; max-age=0";
+                        localStorage.removeItem("userData");
+                        setIsAuthenticated(false);
+                        setUserData(null);
+                    }
                 } else {
-                    throw new Error("Error al obtener el estado del sistema.");
+                    setSystemState(false);
                 }
             } catch (error: any) {
-                setErrorMsg(error.message);
+                setSystemState(false);
             }
         };
         fetchSystemStatus();
@@ -53,7 +84,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
                 const data = await response.json();
                 return data.output;
             } else {
-                throw new Error("Error al ejecutar el comando.");
+                throw new Error(await response.text() || "Error al ejecutar el comando.");
             }
         } catch (error: any) {
             setErrorMsg(`Error del servidor. ${error.message}`);
@@ -77,7 +108,10 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
             if (response.ok) {
                 const data = await response.json();
                 document.cookie = `authToken=${data.token};`;
-                setUserData(data.userData);
+                if (data.user_data) {
+                    localStorage.setItem("userData", JSON.stringify(data.user_data));
+                }
+                setUserData(data.user_data);
                 setIsAuthenticated(true);
             } else {
                 setIsAuthenticated(false);
@@ -89,10 +123,21 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setLoading(false);
         }
+        return true;
     };
     const logout = () => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/execute`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ command: "logout" }),
+        }).catch((error) => {
+            console.error("Error al cerrar sesión:", error);
+        });
         setIsAuthenticated(false);
         document.cookie = "authToken=; path=/; max-age=0";
+        localStorage.removeItem("userData");
         redirect("/");
     }
     // Renders

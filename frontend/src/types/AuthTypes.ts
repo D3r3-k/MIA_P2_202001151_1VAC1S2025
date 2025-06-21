@@ -8,14 +8,13 @@ export interface UserData {
   username: string;
   group: string;
   partition_id: string;
-  permissions: string;
 }
 
 export interface MiaContextType {
   systemState: boolean;
   executeCommand: (command: string) => Promise<string>;
   isAuthenticated: boolean;
-  login: ({ partition_id, username, password }: LoginParams) => Promise<void>;
+  login: ({ partition_id, username, password }: LoginParams) => Promise<boolean>;
   logout: () => Promise<void>;
   userData: UserData | null;
   loading: boolean;
