@@ -1,6 +1,6 @@
 "use client";
 
-import { MiaContextType, UserData } from "@/types/AuthTypes";
+import { MiaContextType, UserData } from "@/types/MiaTypes";
 import { redirect } from "next/navigation";
 import { createContext, useEffect, useState } from "react";
 
@@ -49,7 +49,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
                     setSystemState(data.status);
                     if (data.authToken.username != "") {
                         setIsAuthenticated(true);
-                        setUserData(data.authToken);
+                        if (data.userData.username !== "") setUserData(data.authToken);
                         document.cookie = `authToken=true; path=/;`;
                     } else {
                         document.cookie = "authToken=; path=/; max-age=0";
@@ -126,31 +126,32 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         return true;
     };
     const logout = () => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/execute`, {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ command: "logout" }),
         }).catch((error) => {
             console.error("Error al cerrar sesión:", error);
         });
         setIsAuthenticated(false);
+        setUserData(null);
         document.cookie = "authToken=; path=/; max-age=0";
         localStorage.removeItem("userData");
         redirect("/");
     }
+
     // Renders
     return (
         <MiaContext.Provider value={{
+            loading,
             systemState,
             isAuthenticated,
             userData,
+            executeCommand,
             login,
             logout,
-            loading,
             errorMsg,
-            executeCommand
         }}>
             {children}
         </MiaContext.Provider>

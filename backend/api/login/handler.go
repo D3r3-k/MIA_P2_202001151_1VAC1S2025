@@ -24,6 +24,7 @@ type LoginResponse struct {
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var loginReq LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -47,6 +48,19 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	loginRes.UserData.Username = nombre
 	loginRes.UserData.Group = grupo
 	loginRes.UserData.Partition_id = loginReq.PartitionID
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(loginRes)
+}
+
+// [Logout]
+type LogoutResponse struct {
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+}
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	commands.Fn_Logout("")
+
+	logoutRes := LogoutResponse{Status: true, Message: "Sesión cerrada correctamente."}
+	json.NewEncoder(w).Encode(logoutRes)
 }

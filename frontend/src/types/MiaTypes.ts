@@ -11,12 +11,12 @@ export interface UserData {
 }
 
 export interface MiaContextType {
+  loading: boolean;
   systemState: boolean;
-  executeCommand: (command: string) => Promise<string>;
   isAuthenticated: boolean;
+  userData: UserData | null;
+  executeCommand: (command: string) => Promise<string>;
   login: ({ partition_id, username, password }: LoginParams) => Promise<boolean>;
   logout: () => Promise<void>;
-  userData: UserData | null;
-  loading: boolean;
   errorMsg: string | null;
 }

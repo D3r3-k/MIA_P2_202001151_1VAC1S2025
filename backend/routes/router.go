@@ -17,7 +17,10 @@ func SetupRouter() *mux.Router {
 	api.HandleFunc("/execute", execute.ExecuteHandler).Methods("POST")
 	api.HandleFunc("/drives", drivesInfo.DrivesHandler).Methods("GET")
 	api.HandleFunc("/drives/info", drivesInfo.DrivesInfoHandler).Methods("GET")
+	api.HandleFunc("/drives/{driveletter}", drivesInfo.DriveHandler).Methods("GET")
+	api.HandleFunc("/drives/{driveletter}/partitions", drivesInfo.DrivePartitionsHandler).Methods("GET")
 	api.HandleFunc("/login", login.LoginHandler).Methods("POST")
+	api.HandleFunc("/logout", login.LogoutHandler).Methods("POST")
 
 	return r
 }

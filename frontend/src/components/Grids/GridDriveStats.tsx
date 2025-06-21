@@ -1,75 +1,81 @@
-"use client";
-
-import { Database, HardDriveIcon } from "lucide-react";
+import { Calculator, Database, HardDriveDownload, HardDriveIcon, Route } from "lucide-react";
 import { DriveStats } from "../DriveStats/DriveStats";
-import { useEffect, useState } from "react";
-import { DriveDiskStatus } from "@/types/GlobalTypes";
-import SkeletonStatsCard from "../DriveStats/SkeletonStatsCard";
+import { DriveDiskInfoType } from "@/types/GlobalTypes";
+import useFetchs from "@/hooks/useFetchs";
 
+interface GridDriveStatsProps {
+    driveLetter: string;
+}
 
-export default function GridDriveStats() {
-    const [driveData, setDriveData] = useState<DriveDiskStatus | null>(null);
-
-    useEffect(() => {
-        const fetchDriveData = async () => {
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/drives/info`);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch drive data");
-                }
-                const data: DriveDiskStatus = await response.json();
-                setDriveData(data);
-            } catch (error) {
-                console.error("Error fetching drive data:", error);
-            }
-        };
-
-        fetchDriveData();
-    }, []);
-
-    if (!driveData) {
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <SkeletonStatsCard />
-                <SkeletonStatsCard />
-                <SkeletonStatsCard />
-            </div>
-        );
-    }
+export default async function GridDriveStats({ driveLetter }: GridDriveStatsProps) {
+    // Hooks
+    const { getDriveInfo } = useFetchs();
+    // States
+    const data: DriveDiskInfoType = await getDriveInfo(driveLetter);
+    // Effects
+    // Functions
+    // Renders
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 group">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 group">
             <DriveStats
-                title="Total de Discos"
-                value={driveData.totalDisks}
+                title="Disco"
+                value={data.Name}
                 color={{
                     color: "text-blue-500",
                     bgColor: "from-blue-500/10 to-blue-500/30",
                     borderColor: "border-blue-500",
                     accentColor: "bg-blue-500/10"
                 }}
+                direction="vertical"
                 icon={HardDriveIcon}
             />
             <DriveStats
-                title="Particiones montadas"
-                value={driveData.totalPartitions}
+                title="Ruta del Disco"
+                value={data.Path}
+                color={{
+                    color: "text-cyan-500",
+                    bgColor: "from-cyan-500/10 to-cyan-500/30",
+                    borderColor: "border-cyan-500",
+                    accentColor: "bg-cyan-500/10"
+                }}
+                direction="vertical"
+                icon={Route}
+            />
+            <DriveStats
+                title="Tamaño del Disco"
+                value={data.Size}
+                color={{
+                    color: "text-purple-500",
+                    bgColor: "from-purple-500/10 to-purple-500/30",
+                    borderColor: "border-purple-500",
+                    accentColor: "bg-purple-500/10"
+                }}
+                direction="vertical"
+                icon={Calculator}
+            />
+            <DriveStats
+                title="Fit"
+                value={data.Fit.toUpperCase()}
                 color={{
                     color: "text-green-500",
                     bgColor: "from-green-500/10 to-green-500/30",
                     borderColor: "border-green-500",
                     accentColor: "bg-green-500/10"
                 }}
-                icon={Database}
+                direction="vertical"
+                icon={HardDriveDownload}
             />
             <DriveStats
-                title="Tamaño Total"
-                value={driveData.totalSize}
+                title="Particiones Montadas"
+                value={data.Partitions}
                 color={{
                     color: "text-red-500",
                     bgColor: "from-red-500/10 to-red-500/30",
                     borderColor: "border-red-500",
                     accentColor: "bg-red-500/10"
                 }}
+                direction="vertical"
                 icon={HardDriveIcon}
             />
         </div>

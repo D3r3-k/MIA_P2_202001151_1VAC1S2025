@@ -108,7 +108,7 @@ type PartitionFreeSpace struct {
 //  =============================================================
 
 type Superblock struct {
-	S_filesystem_type   int32
+	S_filesystem_type   int32 // ext2, ext3
 	S_inodes_count      int32 // total number of inodes
 	S_blocks_count      int32 // total number of blocks
 	S_free_blocks_count int32 // free blocks

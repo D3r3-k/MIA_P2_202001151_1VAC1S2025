@@ -1,7 +1,10 @@
+import SkeletonDriveDisk from "@/components/DriveDisk/SkeletonDriveDisk";
+import SkeletonStatsCard from "@/components/DriveStats/SkeletonStatsCard";
 import GridDrives from "@/components/Grids/GridDrives";
-import GridDriveStats from "@/components/Grids/GridDriveStats";
+import GridDrivesStats from "@/components/Grids/GridDrivesStats";
+import { Suspense } from "react";
 
-export default function DrivesPage() {
+export default async function DrivesPage() {
     // Hooks
     // States
     // Effects
@@ -19,11 +22,28 @@ export default function DrivesPage() {
                         Administra y monitorea todas las particiones del sistema
                     </p>
                 </div>
-                <GridDriveStats />
+                <Suspense fallback={
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 group">
+                        <SkeletonStatsCard />
+                        <SkeletonStatsCard />
+                        <SkeletonStatsCard />
+                    </div>
+                }>
+                    <GridDrivesStats />
+                </Suspense>
             </div>
             <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-white mb-6">Discos del Sistema</h2>
-                <GridDrives />
+
+                <Suspense fallback={
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <SkeletonDriveDisk />
+                        <SkeletonDriveDisk />
+                        <SkeletonDriveDisk />
+                    </div>
+                }>
+                    <GridDrives />
+                </Suspense>
             </div>
         </main>
     );

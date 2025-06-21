@@ -2,6 +2,7 @@
 
 import { useMia } from '@/hooks/useMia';
 import { HardDrive, LogIn, Power, Terminal, User } from 'lucide-react'
+import Link from 'next/link';
 import { redirect, usePathname } from 'next/navigation';
 import React from 'react'
 
@@ -33,17 +34,25 @@ export default function Sidebar() {
     // Functions
     // Renders
     const isActive = (path: string) => {
-        return pathname === path ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/25" : "text-gray-300 hover:text-white hover:bg-gray-700/60";
+        if (path === '/drives' && pathname.includes('/drives')) {
+            return "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
+        } else if (path === `/drives/${userData?.partition_id[0]}/${userData?.partition_id}`) {
+            return pathname === path ? "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25" : "text-gray-300 hover:text-white hover:bg-gray-700/60";
+        }
+        return pathname === path ? "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25" : "text-gray-300 hover:text-white hover:bg-gray-700/60";
     };
     const isActiveIcon = (path: string) => {
-        return pathname === path && <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />;
+        if (pathname !== path) {
+            return null;
+        }
+        return <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />;
     };
     return (
         <aside className="fixed left-0 top-0 h-screen w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 border-r border-gray-700/50 backdrop-blur-xl flex flex-col z-50">
             <div className="p-5 border-b border-gray-700/30 flex-shrink-0">
                 <div className="flex items-center space-x-3 mb-4">
                     <div className="relative">
-                        <div className="w-12 h-12 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/25">
+                        <div className="w-12 h-12 bg-gradient-to-br from-corinto-500 via-corinto-600 to-corinto-700 rounded-xl flex items-center justify-center shadow-lg shadow-corinto-500/25">
                             <HardDrive className="w-6 h-6 text-white" />
                         </div>
                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
@@ -62,21 +71,52 @@ export default function Sidebar() {
                     <nav className="space-y-2">
                         {menuItems.map((item, index) => {
                             if (item.path === '/login' && isAuthenticated) {
-                                return null; // Skip if the user is authenticated
+                                return null;
                             }
-                            return <button
-                                onClick={() => redirect(item.path)}
-                                key={index}
-                                className={`w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer
-                                    ${isActive(item.path)}
-                                `}
-                            >
-                                <div className="flex items-center space-x-3 flex-1">
-                                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                                    <span className="font-medium text-sm truncate">{item.label}</span>
+                            return (
+                                <div key={index}>
+                                    <button
+                                        onClick={() => redirect(item.path)}
+                                        className={`w-full max-w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer
+                                            ${isActive(item.path)}
+                                        `}>
+                                        <div className="flex items-center space-x-3 flex-1">
+                                            <item.icon className="w-4 h-4 flex-shrink-0" />
+                                            <span className="font-medium text-sm truncate">{item.label}</span>
+                                        </div>
+                                        {isActiveIcon(item.path)}
+                                    </button>
+                                    {item.path.includes("/drives") && pathname.includes("/drives") && userData && (
+                                        <>
+                                            <span className="ml-5 text-xs text-gray-400">Sesión iniciada en</span>
+                                            <div className="flex border-l border-gray-500 items-center justify-center ml-5 py-3">
+                                                <Link
+                                                    href={`/drives/${userData.partition_id[0]}`}
+                                                    className={`flex items-center w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/60 px-3 py-2 rounded-md text-sm mx-2 ${isActive(`/drives/${userData.partition_id[0]}`)}`}
+                                                >
+                                                    <div className="flex items-center space-x-3 flex-1">
+                                                        {userData?.partition_id && `Drive: ${userData.partition_id[0]}`}
+                                                    </div>
+                                                    {isActiveIcon(`/drives/${userData.partition_id[0]}`)}
+                                                </Link>
+                                            </div>
+                                            {true && (
+                                                <div className="flex border-l border-gray-500 items-center justify-center ml-5">
+                                                    <Link
+                                                        href={`/drives/${userData.partition_id[0]}/${userData.partition_id}`}
+                                                        className={`flex items-center w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/60 px-3 py-2 rounded-md text-sm ml-10 mr-2 ${isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`)}`}
+                                                    >
+                                                        <div className="flex items-center space-x-3 flex-1">
+                                                            {userData?.partition_id && `Partición: ${userData.partition_id}`}
+                                                        </div>
+                                                        {isActiveIcon(`/drives/${userData.partition_id[0]}/${userData.partition_id}`)}
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
-                                {isActiveIcon(item.path)}
-                            </button>
+                            );
                         })}
                     </nav>
                 </div>
@@ -117,7 +157,7 @@ export default function Sidebar() {
                     <div className="px-4 py-2 border-t border-gray-700/30">
                         <button
                             onClick={logout}
-                            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-md text-gray-300 hover:text-white hover:bg-red-700/60 transition-all duration-200 relative cursor-pointer shadow-md bg-gradient-to-br from-red-500 to-red-700"
+                            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-md text-gray-300 hover:text-white hover:bg-corinto-700/60 transition-all duration-200 relative cursor-pointer shadow-md bg-gradient-to-br from-corinto-500 to-corinto-700"
                         >
                             <Power className="w-4 h-4 flex-shrink-0" />
                             <span className="font-medium text-sm">Cerrar Sesión</span>
@@ -135,12 +175,12 @@ export default function Sidebar() {
                                 {
                                     systemState
                                         ? <span className="text-xs font-medium text-green-400">Activo</span>
-                                        : <span className="text-xs font-medium text-red-400">Inactivo</span>
+                                        : <span className="text-xs font-medium text-corinto-400">Inactivo</span>
                                 }
                                 {
                                     systemState
                                         ? <div className="w-2 h-2 bg-green-400 rounded-full" />
-                                        : <div className="w-2 h-2 bg-red-400 rounded-full" />
+                                        : <div className="w-2 h-2 bg-corinto-400 rounded-full" />
                                 }
                             </div>
                         </div>

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// [drives] Funciones para obtener información sobre los discos
+// [Drives] Funciones para obtener información sobre los discos
 func CountDisks() int {
 	totalDisks := 0
 	files, err := os.ReadDir(globals.PathDisks)
@@ -75,7 +75,7 @@ func ConvertSizeToString(size int32) string {
 	}
 }
 
-// [drives] Funciones para obtener información de los discos
+// [Drives] Funciones para obtener información de los discos
 type DiskInfo struct {
 	Name       string
 	Path       string
@@ -121,4 +121,124 @@ func GetDiskInfo() ([]DiskInfo, error) {
 		}
 	}
 	return diskData, nil
+}
+
+// [Drive] Funciones para obtener información de un disco específico
+type DriveInfo struct {
+	Name       string
+	Path       string
+	Size       int32
+	Fit        string
+	Partitions int
+}
+
+func GetDriveInfo(driveLetter string) (DriveInfo, error) {
+	if len(driveLetter) != 1 {
+		return DriveInfo{}, fmt.Errorf("invalid drive letter: %s", driveLetter)
+	}
+
+	f, _, err := utils.OpenDisk(driveLetter)
+	if err != nil {
+		return DriveInfo{}, err
+	}
+	defer f.Close()
+
+	var mbr Structs.MBR
+	if err := utils.ReadObject(f, &mbr, 0); err != nil {
+		return DriveInfo{}, err
+	}
+	diskInfo := DriveInfo{
+		Name:       string(driveLetter[0]),
+		Path:       strings.Split(f.Name(), "/")[len(strings.Split(f.Name(), "/"))-1],
+		Size:       mbr.MbrSize,
+		Fit:        string(mbr.Fit[:]),
+		Partitions: 0,
+	}
+	for _, partition := range mbr.Partitions {
+		if partition.Status[0] == '1' {
+			diskInfo.Partitions++
+		}
+	}
+	return diskInfo, nil
+}
+
+type PartitionInfo struct {
+	Status     string
+	Type       string
+	Fit        string
+	Size       string
+	Start      int32
+	Name       string
+	ID         string
+	Path       string
+	Date       string
+	Filesystem string
+	Signature  string
+}
+
+func GetDrivePartitions(driveLetter string) ([]PartitionInfo, error) {
+	Partitions := []PartitionInfo{}
+	if len(driveLetter) != 1 {
+		return nil, fmt.Errorf("invalid drive letter: %s", driveLetter)
+	}
+
+	f, _, err := utils.OpenDisk(driveLetter)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var sb Structs.Superblock
+	if err := utils.ReadObject(f, &sb, 0); err != nil {
+		return nil, err
+	}
+	var mbr Structs.MBR
+	if err := utils.ReadObject(f, &mbr, 0); err != nil {
+		return nil, err
+	}
+	for _, partition := range mbr.Partitions {
+		var newP PartitionInfo
+		_type := string(partition.Type[:])
+		_fit := string(partition.Fit[:])
+		_name := string(partition.Name[:])
+		_id := string(partition.Id[:])
+		_date := string(mbr.CreationDate[:])
+		_type = strings.Trim(_type, "\x00")
+		_fit = strings.Trim(_fit, "\x00")
+		_name = strings.Trim(_name, "\x00")
+		_id = strings.Trim(_id, "\x00")
+		_date = strings.Trim(_date, "\x00")
+		_signature := strings.Trim(fmt.Sprintf("%d", mbr.Signature), "\x00")
+		if partition.Status[0] == '1' {
+			newP.Status = "Montada"
+		} else {
+			newP.Status = "Desmontada"
+		}
+		newP.Type = string(partition.Type[:])
+		switch strings.ToUpper(_type) {
+		case "P":
+			newP.Type = "Primaria"
+		case "E":
+			newP.Type = "Extendida"
+		default:
+			newP.Type = "Sin Formato"
+		}
+		newP.Fit = strings.ToUpper(_fit)
+		newP.Size = ConvertSizeToString(partition.Size)
+		newP.Start = partition.Start
+		newP.Name = _name
+		newP.ID = _id
+		newP.Path = globals.PathDisks + driveLetter
+		newP.Date = _date
+		switch sb.S_filesystem_type {
+		case 2:
+			newP.Filesystem = "Ext2"
+		case 3:
+			newP.Filesystem = "Ext3"
+		default:
+			newP.Filesystem = "Sin Formato"
+		}
+		newP.Signature = _signature
+		Partitions = append(Partitions, newP)
+	}
+	return Partitions, nil
 }
