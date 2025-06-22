@@ -19,8 +19,8 @@ type StatusResponse struct {
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var data StatusResponse
-	data.Status = "ok"
 	if globals.LoginSession.User == "" {
+		data.Status = "false"
 		data.AuthToken = struct {
 			Username     string `json:"username"`
 			Group        string `json:"group"`
@@ -28,6 +28,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		}{}
 	} else {
 		nombre, grupo := utils.GetUserAndGroupNames(string(globals.LoginSession.PartitionID[:]), globals.LoginSession.UID, globals.LoginSession.GID)
+		data.Status = "true"
 		data.AuthToken = struct {
 			Username     string `json:"username"`
 			Group        string `json:"group"`
@@ -38,5 +39,5 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 			Partition_id: string(globals.LoginSession.PartitionID[:]),
 		}
 	}
-	json.NewEncoder(w).Encode(StatusResponse{Status: "ok", AuthToken: data.AuthToken})
+	json.NewEncoder(w).Encode(StatusResponse{Status: data.Status, AuthToken: data.AuthToken})
 }

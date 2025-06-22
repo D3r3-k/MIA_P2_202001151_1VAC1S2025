@@ -718,33 +718,33 @@ func GetDriveletter(id string) (string, error) {
 }
 
 func InodePermString(perm []byte) string {
-	p := ""
-	if len(perm) < 9 {
-		return "---------"
+	if len(perm) < 3 {
+		return "---"
 	}
-	for i := 0; i < 9; i++ {
-		switch i % 3 {
-		case 0:
-			if perm[i] == '7' || perm[i] == '4' || perm[i] == '5' || perm[i] == '6' {
-				p += "r"
-			} else {
-				p += "-"
-			}
-		case 1:
-			if perm[i] == '7' || perm[i] == '2' || perm[i] == '3' || perm[i] == '6' {
-				p += "w"
-			} else {
-				p += "-"
-			}
-		case 2:
-			if perm[i] == '7' || perm[i] == '1' || perm[i] == '3' || perm[i] == '5' {
-				p += "x"
-			} else {
-				p += "-"
-			}
+	result := ""
+	for i := 0; i < 3; i++ {
+		switch perm[i] {
+		case '0':
+			result += "---"
+		case '1':
+			result += "--x"
+		case '2':
+			result += "-w-"
+		case '3':
+			result += "-wx"
+		case '4':
+			result += "r--"
+		case '5':
+			result += "r-x"
+		case '6':
+			result += "rw-"
+		case '7':
+			result += "rwx"
+		default:
+			result += "---"
 		}
 	}
-	return p
+	return result
 }
 
 func GetUserAndGroupNames(partitionId string, uid int32, gid int32) (string, string) {

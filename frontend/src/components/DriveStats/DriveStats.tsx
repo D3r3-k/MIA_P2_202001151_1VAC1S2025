@@ -7,7 +7,7 @@ interface DriveStatsProps {
         borderColor: string;
         accentColor: string;
     }
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     direction?: "horizontal" | "vertical";
 }
 

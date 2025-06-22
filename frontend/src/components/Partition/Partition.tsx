@@ -1,8 +1,7 @@
 "use client";
 
 import { useMia } from '@/hooks/useMia';
-import { HardDrive, Database, Folder, Activity, CheckCircle, Clock, XCircle, Info, Edit, Mountain, Signature } from 'lucide-react';
-import { redirect } from 'next/navigation';
+import { HardDrive, Database, Folder, Activity } from 'lucide-react';
 type PartitionProps = {
     name: string
     driveletter: string
@@ -26,9 +25,9 @@ export function Partition({ name, driveletter: disk, size, type, filesystem, mou
         if (!userData && id === "") {
             return
         } else if (!isAuthenticated) {
-            redirect('/login?partition_id=' + id);
+            window.location.href = '/login?partition_id=' + id;
         } else if (isAuthenticated && id === userData?.partition_id) {
-            redirect(`/drives/${disk}/${id}`);
+            window.location.href = `/drives/${disk}/${id}`;
         }
 
     }

@@ -41,7 +41,7 @@ func AnalyzeCommand(comando string, parametros string) {
 	case "find":
 		commands.Fn_Find(parametros)
 	case "pause":
-		commands.Pause()
+		// commands.Pause()
 	case "rep":
 		commands.Fn_Rep(parametros)
 	default:

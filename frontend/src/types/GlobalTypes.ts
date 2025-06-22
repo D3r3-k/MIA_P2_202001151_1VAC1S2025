@@ -33,3 +33,17 @@ export type DrivePartitionType = {
   Filesystem: string;
   Signature: string;
 };
+
+export type FileSystemItemType = {
+  ID: string;
+  Name: string;
+  Type: string;
+  Path: string;
+  Children: FileSystemItemType[];
+  Size?: string;
+  CreatedAt?: string;
+  Owner?: string;
+  Content?: string;
+  Extension?: string;
+  Permissions?: string;
+};

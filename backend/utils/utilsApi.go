@@ -147,11 +147,23 @@ func GetDriveInfo(driveLetter string) (DriveInfo, error) {
 	if err := utils.ReadObject(f, &mbr, 0); err != nil {
 		return DriveInfo{}, err
 	}
+	_fit := string(mbr.Fit[:])
+	_fit = strings.Trim(_fit, "\x00")
+	switch strings.ToUpper(_fit) {
+	case "F":
+		_fit = "Primer Ajuste"
+	case "B":
+		_fit = "Mejor Ajuste"
+	case "W":
+		_fit = "Peor Ajuste"
+	default:
+		_fit = "Sin Ajuste"
+	}
 	diskInfo := DriveInfo{
 		Name:       string(driveLetter[0]),
 		Path:       strings.Split(f.Name(), "/")[len(strings.Split(f.Name(), "/"))-1],
 		Size:       mbr.MbrSize,
-		Fit:        string(mbr.Fit[:]),
+		Fit:        _fit,
 		Partitions: 0,
 	}
 	for _, partition := range mbr.Partitions {
@@ -187,15 +199,15 @@ func GetDrivePartitions(driveLetter string) ([]PartitionInfo, error) {
 		return nil, err
 	}
 	defer f.Close()
-	var sb Structs.Superblock
-	if err := utils.ReadObject(f, &sb, 0); err != nil {
-		return nil, err
-	}
 	var mbr Structs.MBR
 	if err := utils.ReadObject(f, &mbr, 0); err != nil {
 		return nil, err
 	}
 	for _, partition := range mbr.Partitions {
+		var sb Structs.Superblock
+		if err := utils.ReadObject(f, &sb, int64(partition.Start)); err != nil {
+			return nil, err
+		}
 		var newP PartitionInfo
 		_type := string(partition.Type[:])
 		_fit := string(partition.Fit[:])

@@ -1,6 +1,7 @@
 package execute
 
 import (
+	globals "MIA_PI_202001151_1VAC1S2025/manager/global"
 	"MIA_PI_202001151_1VAC1S2025/manager/lib"
 	"encoding/json"
 	"log"
@@ -40,8 +41,6 @@ func ExecuteHandler(w http.ResponseWriter, r *http.Request) {
 		comando, parametros := lib.GetCommands(line)
 		lib.AnalyzeCommand(comando, parametros)
 	}
-
-	log.Printf("Ejecutando comando: %s", req.Command)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"result": "Comando recibido: " + req.Command})
+	json.NewEncoder(w).Encode(map[string]string{"result": "Comando recibido: " + globals.Output})
 }

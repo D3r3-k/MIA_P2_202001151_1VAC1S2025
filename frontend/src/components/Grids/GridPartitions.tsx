@@ -1,26 +1,33 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import useFetchs from "@/hooks/useFetchs";
 import { Partition } from "../Partition/Partition";
+import { DrivePartitionType } from "@/types/GlobalTypes";
 
 interface GridPartitionsProps {
     driveletter: string;
 }
 
-export default async function GridPartitions({ driveletter }: GridPartitionsProps) {
-    // Hooks
+export default function GridPartitions({ driveletter }: GridPartitionsProps) {
     const { getPartitions } = useFetchs();
-    // States
-    const data = await getPartitions(driveletter);
-    // Effects
-    // Handlers
-    // Functions
-    // Renders
+    const [partitions, setPartitions] = useState<DrivePartitionType[]>([]);
+
+    useEffect(() => {
+        const fetchPartitions = async () => {
+            const data = await getPartitions(driveletter);
+            setPartitions(data);
+        };
+        fetchPartitions();
+    }, [driveletter]);
+
     return (
         <div className="space-y-6">
-            {data.length > 0 ? (
-                data.map((partition, index) => (
+            {partitions.length > 0 ? (
+                partitions.map((partition, index) => (
                     <Partition
                         key={index}
-                        name={partition.Name !== "" ? partition.Name : `Libre`}
+                        name={partition.Name !== "" ? partition.Name : "Libre"}
                         driveletter={driveletter}
                         size={partition.Size}
                         type={partition.Type}
@@ -38,5 +45,5 @@ export default async function GridPartitions({ driveletter }: GridPartitionsProp
                 </div>
             )}
         </div>
-    )
+    );
 }

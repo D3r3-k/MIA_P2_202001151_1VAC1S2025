@@ -1,20 +1,32 @@
-import { Calculator, Database, HardDriveDownload, HardDriveIcon, Route } from "lucide-react";
+"use client";
+
+import { Calculator, HardDriveDownload, HardDriveIcon, Route } from "lucide-react";
 import { DriveStats } from "../DriveStats/DriveStats";
 import { DriveDiskInfoType } from "@/types/GlobalTypes";
 import useFetchs from "@/hooks/useFetchs";
+import { useEffect, useState } from "react";
 
 interface GridDriveStatsProps {
     driveLetter: string;
 }
 
-export default async function GridDriveStats({ driveLetter }: GridDriveStatsProps) {
-    // Hooks
+export default function GridDriveStats({ driveLetter }: GridDriveStatsProps) {
     const { getDriveInfo } = useFetchs();
-    // States
-    const data: DriveDiskInfoType = await getDriveInfo(driveLetter);
-    // Effects
-    // Functions
-    // Renders
+    const [data, setData] = useState<DriveDiskInfoType>({
+        Name: driveLetter.toUpperCase(),
+        Path: "N/A",
+        Size: "0 B",
+        Fit: "N/A",
+        Partitions: 0,
+    });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const info = await getDriveInfo(driveLetter);
+            setData(info);
+        };
+        fetchData();
+    }, [driveLetter]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 group">

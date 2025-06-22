@@ -12,6 +12,7 @@ export interface UserData {
 
 export interface MiaContextType {
   loading: boolean;
+  setLoading: (loading: boolean) => void;
   systemState: boolean;
   isAuthenticated: boolean;
   userData: UserData | null;
