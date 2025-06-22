@@ -1,13 +1,18 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMia } from '@/hooks/useMia';
 import ContentPartition from '@/components/ContentPartition/ContentPartition';
 import { DriveDiskInfoType } from '@/types/GlobalTypes';
 import Head from 'next/head';
-import React from 'react';
 
 export async function getStaticPaths() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/drives`);
     if (!res.ok) {
         throw new Error('Failed to fetch drives data');
     }
+
     const drivesData: DriveDiskInfoType[] = await res.json();
     const paths: { params: { driveletter: string; partition_id: string } }[] = [];
 
@@ -19,6 +24,7 @@ export async function getStaticPaths() {
         if (!partitionsRes.ok) {
             throw new Error(`Failed to fetch partitions for drive ${driveLetter}`);
         }
+
         const partitionsData = await partitionsRes.json();
 
         for (const partition of partitionsData) {
@@ -40,9 +46,7 @@ export async function getStaticPaths() {
     };
 }
 
-
-
-export async function getStaticProps({ params }: { params: { driveletter: string, partition_id: string } }) {
+export async function getStaticProps({ params }: { params: { driveletter: string; partition_id: string } }) {
     return {
         props: {
             driveletter: params.driveletter,
@@ -52,11 +56,36 @@ export async function getStaticProps({ params }: { params: { driveletter: string
 }
 
 export default function ParticionId({ driveletter, partition_id }: { driveletter: string; partition_id: string }) {
+    const router = useRouter();
+    const { userData } = useMia();
+    const [checkedSession, setCheckedSession] = useState(false);
+
+    useEffect(() => {
+        if (!userData) {
+            router.push('/login');
+        } else if (userData.partition_id !== partition_id) {
+            router.push('/login');
+        } else {
+            setCheckedSession(true);
+        }
+    }, [userData, partition_id, router]);
+
+    if (!checkedSession) {
+        return (
+            <main className="flex-1 p-6 ml-72 flex items-center justify-center">
+                <p className="text-gray-400">Verificando sesión...</p>
+            </main>
+        );
+    }
+
     return (
         <>
             <Head>
                 <title>{`Partición ${partition_id} - Disco ${driveletter} - F2 MIA`}</title>
-                <meta name="description" content={`Explora el contenido de la partición ${partition_id} del disco ${driveletter}`} />
+                <meta
+                    name="description"
+                    content={`Explora el contenido de la partición ${partition_id} del disco ${driveletter}`}
+                />
             </Head>
             <main className="flex-1 p-6 ml-72">
                 <div className="mb-8">

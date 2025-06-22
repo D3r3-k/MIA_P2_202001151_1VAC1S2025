@@ -1,4 +1,4 @@
-// custom hook to fetch data from an API
+"use client";
 
 import {
   DriveDiskInfoType,
@@ -7,128 +7,112 @@ import {
   DrivePartitionType,
   FileSystemItemType,
 } from "@/types/GlobalTypes";
+import { useMia } from "./useMia";
 
 const useFetchs = () => {
-  // [Drives]
-  const getDrivesStats = async () => {
+  const { activateToast } = useMia();
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const fetchJson = async <T>(
+    url: string,
+    options?: RequestInit,
+    defaultValue?: T,
+    errorMessage?: string
+  ): Promise<T> => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/drives/info`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch drive data");
-      }
-      const data: DriveDiskStatusType = await response.json();
-      return data;
+      const response = await fetch(url, options);
+      if (!response.ok)
+        throw new Error(errorMessage || "Error en la solicitud");
+      const data = await response.json();
+      return data as T;
     } catch (error) {
-      console.log("Error fetching drive stats:", error);
-      return {
+      const err = error as Error;
+      activateToast(
+        "error",
+        "Error en la solicitud",
+        errorMessage || err.message
+      );
+      return defaultValue as T;
+    }
+  };
+
+  // [Drives]
+  const getDrivesStats = async (): Promise<DriveDiskStatusType> =>
+    fetchJson<DriveDiskStatusType>(
+      `${baseUrl}/api/drives/info`,
+      undefined,
+      {
         totalDisks: 0,
         totalPartitions: 0,
         totalSize: "0 B",
-      };
-    }
-  };
-  const getDrives = async () => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/drives`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch drive data");
-      }
-      const data: DriveDiskType[] = await response.json();
-      return data || [];
-    } catch (error) {
-      console.log("Error fetching drives:", error);
-      return [];
-    }
-  };
+      },
+      "No se pudo obtener el resumen de los discos."
+    );
+
+  const getDrives = async (): Promise<DriveDiskType[]> =>
+    fetchJson<DriveDiskType[]>(
+      `${baseUrl}/api/drives`,
+      undefined,
+      [],
+      "No se pudo obtener la lista de discos."
+    );
+
   // [Drive]
-  const getDriveInfo = async (driveLetter: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/drives/${driveLetter}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch drive info");
-      }
-      const data: DriveDiskInfoType = await response.json();
-      return data;
-    } catch (error) {
-      console.log("Error fetching drive info:", error);
-      return {
+  const getDriveInfo = async (
+    driveLetter: string
+  ): Promise<DriveDiskInfoType> =>
+    fetchJson<DriveDiskInfoType>(
+      `${baseUrl}/api/drives/${driveLetter}`,
+      undefined,
+      {
         Name: driveLetter.toUpperCase(),
         Path: "N/A",
         Size: "0 B",
         Fit: "N/A",
         Partitions: 0,
-      };
-    }
-  };
-  const getPartitions = async (driveLetter: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/drives/${driveLetter}/partitions`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch partitions data");
-      }
-      const data: DrivePartitionType[] = await response.json();
-      return data || [];
-    } catch (error) {
-      console.log("Error fetching partitions:", error);
-      return [];
-    }
-  };
+      },
+      `No se pudo obtener la información del disco ${driveLetter.toUpperCase()}.`
+    );
+
+  const getPartitions = async (
+    driveLetter: string
+  ): Promise<DrivePartitionType[]> =>
+    fetchJson<DrivePartitionType[]>(
+      `${baseUrl}/api/drives/${driveLetter}/partitions`,
+      undefined,
+      [],
+      `No se pudieron obtener las particiones del disco ${driveLetter.toUpperCase()}.`
+    );
 
   const getFileSystemItems = async (
     path: string
-  ): Promise<FileSystemItemType | []> => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/find`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ path }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch partition find");
-      }
-      const data: FileSystemItemType = await response.json();
-      return data;
-    } catch (error) {
-      console.log("Error fetching partition find:", error);
-      return [];
-    }
-  };
+  ): Promise<FileSystemItemType | []> =>
+    fetchJson<FileSystemItemType | []>(
+      `${baseUrl}/api/find`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path }),
+      },
+      [],
+      `No se pudo obtener el contenido de la ruta "${path}".`
+    );
 
-  const getContentFile = async (path: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/cat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ path }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch file content");
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.log("Error fetching file content:", error);
-      return "";
-    }
-  };
+  const getContentFile = async (path: string): Promise<string> =>
+    fetchJson<string>(
+      `${baseUrl}/api/cat`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path }),
+      },
+      "",
+      `No se pudo leer el archivo "${path}".`
+    );
 
   return {
     getDrives,

@@ -1,15 +1,16 @@
 import { useMia } from '@/hooks/useMia';
-import { User } from 'lucide-react'
+import { User } from 'lucide-react';
 import Head from 'next/head';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/router';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
 export default function Login() {
     // Hooks
-    const { login } = useMia();
+    const { userData, login } = useMia();
     const params = useSearchParams();
     const router = useRouter();
+
     // States
     const [loginData, setLoginData] = useState({
         partitionId: "",
@@ -17,7 +18,15 @@ export default function Login() {
         password: "",
     });
 
-    // Effects
+    // ✅ Si ya hay sesión activa, redirigir a la ruta de su partición
+    useEffect(() => {
+        if (userData?.partition_id) {
+            const driveLetter = userData.partition_id[0];
+            router.push(`/drives/${driveLetter}`);
+        }
+    }, [userData, router]);
+
+    // Obtener partition_id de los query params
     useEffect(() => {
         const partitionId = params.get("partition_id") || "";
         setLoginData((prev) => ({
@@ -26,14 +35,16 @@ export default function Login() {
         }));
     }, [params]);
 
+    // Actualizar la URL al escribir el ID de partición
     useEffect(() => {
         const searchParams = new URLSearchParams();
         if (loginData.partitionId) {
             searchParams.set("partition_id", loginData.partitionId);
+            window.history.replaceState({}, "", `?${searchParams.toString()}`);
         }
     }, [loginData.partitionId]);
 
-    // Handlers
+    // Handler de login
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         const loginres = await login({
@@ -42,7 +53,8 @@ export default function Login() {
             password: loginData.password,
         });
         if (loginres) {
-            router.push("/drives");
+            const driveLetter = loginData.partitionId[0];
+            router.push(`/drives/${driveLetter}`);
         }
     };
 
@@ -51,12 +63,19 @@ export default function Login() {
         let newValue = value;
         if (name === "partitionId") {
             newValue = value.toUpperCase();
-            const searchParams = new URLSearchParams();
-            searchParams.set("partition_id", newValue);
-            window.history.replaceState({}, "", `?${searchParams.toString()}`);
         }
         setLoginData((prev) => ({ ...prev, [name]: newValue }));
     };
+
+    // ✅ Mostrar mensaje mientras redirige si ya hay sesión
+    if (userData?.partition_id) {
+        return (
+            <main className="min-h-screen flex items-center justify-center bg-gray-950">
+                <p className="text-gray-400">Redirigiendo a tu partición activa...</p>
+            </main>
+        );
+    }
+
     return (
         <>
             <Head>
@@ -117,5 +136,5 @@ export default function Login() {
                 </div>
             </main>
         </>
-    )
+    );
 }

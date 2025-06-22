@@ -9,12 +9,9 @@ import { Suspense } from "react";
 export async function getStaticPaths() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/drives`).then((res) => res.json());
     const drives = res.map((item: DriveDiskInfoType) => item.Name);
-
-
     const paths = drives.map((driveletter: string) => ({
         params: { driveletter: String(driveletter) },
     }));
-
     return {
         paths,
         fallback: false,

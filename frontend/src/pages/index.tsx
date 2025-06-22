@@ -78,7 +78,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <main className="flex-1 p-6 ml-72">
+      <main className="flex-1 p-6 ml-72 relative">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             Consola de Discos

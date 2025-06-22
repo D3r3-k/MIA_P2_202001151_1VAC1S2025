@@ -2,60 +2,40 @@
 
 import { useMia } from '@/hooks/useMia';
 import { HardDrive, LogIn, Power, Terminal, User } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import React from 'react';
 
 const menuItems = [
-    {
-        icon: Terminal,
-        label: 'Consola',
-        path: '/'
-    },
-    {
-        icon: HardDrive,
-        label: 'Discos',
-        path: '/drives'
-    },
-    {
-        icon: LogIn,
-        label: 'Iniciar Sesión',
-        path: '/login'
-    }
+    { icon: Terminal, label: 'Consola', path: '/' },
+    { icon: HardDrive, label: 'Discos', path: '/drives' },
+    { icon: LogIn, label: 'Iniciar Sesión', path: '/login' }
 ];
 
 export default function Sidebar() {
     const { systemState, isAuthenticated, logout, userData } = useMia();
     const pathname = usePathname();
-    const router = useRouter();
 
-    const isActive = (path: string) => {
-        if (!pathname) return "";
-        const partitionPath = userData?.partition_id
+    const isActive = (path: string): boolean => {
+        if (!pathname) return false;
+
+        const currentPartitionPath = userData?.partition_id
             ? `/drives/${userData.partition_id[0]}/${userData.partition_id}`
-            : null;
+            : '';
 
-        if (path === '/drives' && pathname.includes('/drives')) {
-            return "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
-        } else if (partitionPath && pathname === partitionPath) {
-            return "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
-        }
-
-        return pathname === path
-            ? "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25"
-            : "text-gray-300 hover:text-white hover:bg-gray-700/60";
+        return (
+            pathname === path ||
+            (path === '/drives' && pathname.startsWith('/drives')) ||
+            pathname === currentPartitionPath
+        );
     };
 
-    const isActiveIcon = (path: string) => {
-        if (!pathname || pathname !== path) return null;
-        return <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />;
-    };
-
-    const goTo = (path: string) => {
-        router.push(path);
-    };
+    const activeClass = "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
+    const defaultClass = "text-gray-300 hover:text-white hover:bg-gray-700/60";
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 border-r border-gray-700/50 backdrop-blur-xl flex flex-col z-50">
+            {/* Logo / Encabezado */}
             <div className="p-5 border-b border-gray-700/30 flex-shrink-0">
                 <div className="flex items-center space-x-3 mb-4">
                     <div className="relative">
@@ -71,6 +51,7 @@ export default function Sidebar() {
                 </div>
             </div>
 
+            {/* Menú de navegación */}
             <div className="flex-1 px-4 py-4">
                 <div className="mb-6">
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
@@ -79,39 +60,43 @@ export default function Sidebar() {
                     <nav className="space-y-2">
                         {menuItems.map((item, index) => {
                             if (item.path === '/login' && isAuthenticated) return null;
+
+                            const active = isActive(item.path);
+
                             return (
                                 <div key={index}>
-                                    <button
-                                        onClick={() => goTo(item.path)}
-                                        className={`w-full max-w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer ${isActive(item.path)}`}
+                                    <Link
+                                        href={item.path}
+                                        className={`w-full max-w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer ${active ? activeClass : defaultClass}`}
                                     >
                                         <div className="flex items-center space-x-3 flex-1">
                                             <item.icon className="w-4 h-4 flex-shrink-0" />
                                             <span className="font-medium text-sm truncate">{item.label}</span>
                                         </div>
-                                        {isActiveIcon(item.path)}
-                                    </button>
-
-                                    {item.path.includes("/drives") &&
-                                        pathname?.includes("/drives") &&
-                                        userData?.partition_id && (
-                                            <>
-                                                <span className="ml-5 text-xs text-gray-400">Sesión iniciada en</span>
-                                                <div className="flex border-l border-gray-500 items-center justify-center ml-5">
-                                                    <button
-                                                        onClick={() =>
-                                                            goTo(`/drives/${userData.partition_id[0]}/${userData.partition_id}`)
-                                                        }
-                                                        className={`flex items-center w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/60 px-3 py-2 rounded-md text-sm ml-5 my-1 ${isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`)}`}
-                                                    >
-                                                        <div className="flex items-center space-x-3 flex-1">
-                                                            {`Partición: ${userData.partition_id}`}
-                                                        </div>
-                                                        {isActiveIcon(`/drives/${userData.partition_id[0]}/${userData.partition_id}`)}
-                                                    </button>
-                                                </div>
-                                            </>
+                                        {active && (
+                                            <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />
                                         )}
+                                    </Link>
+
+                                    {/* Subenlace a partición si aplica */}
+                                    {item.path === "/drives" && pathname.includes("/drives") && userData?.partition_id && (
+                                        <div className="ml-5 mt-1">
+                                            <span className="ml-1 text-xs text-gray-400">Sesión iniciada en</span>
+                                            <div className="flex border-l border-gray-500 items-center justify-center ml-1">
+                                                <Link
+                                                    href={`/drives/${userData.partition_id[0]}/${userData.partition_id}`}
+                                                    className={`flex items-center w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/60 px-3 py-2 rounded-md text-sm ml-3 my-1 ${isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`) ? activeClass : defaultClass}`}
+                                                >
+                                                    <div className="flex items-center space-x-3 flex-1">
+                                                        {`Partición: ${userData.partition_id}`}
+                                                    </div>
+                                                    {isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`) && (
+                                                        <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />
+                                                    )}
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -119,6 +104,7 @@ export default function Sidebar() {
                 </div>
             </div>
 
+            {/* Usuario autenticado */}
             {isAuthenticated && (
                 <>
                     <div className="p-5 border-t border-gray-700/30 flex-shrink-0">
@@ -158,6 +144,7 @@ export default function Sidebar() {
                 </>
             )}
 
+            {/* Estado del sistema */}
             <div className="p-5 border-t border-gray-700/30 flex-shrink-0">
                 <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/30 rounded-xl p-4 border border-gray-700/30">
                     <h4 className="text-sm font-semibold text-white mb-3">Estado del Sistema</h4>

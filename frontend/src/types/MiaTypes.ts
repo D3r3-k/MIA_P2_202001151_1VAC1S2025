@@ -19,5 +19,32 @@ export interface MiaContextType {
   executeCommand: (command: string) => Promise<string>;
   login: ({ partition_id, username, password }: LoginParams) => Promise<boolean>;
   logout: () => Promise<void>;
-  errorMsg: string | null;
+  activateToast: (
+    type: "info" | "success" | "error",
+    message: string,
+    subtitle?: string,
+    duration?: number
+  ) => void;
+  toast: SingleToastData;
+  handleClose: () => void;
+}
+
+
+export interface SingleToastData {
+    message: string;
+    subtitle?: string;
+    type?: "info" | "success" | "error";
+    duration?: number;
+    visible: boolean;
+}
+
+export interface ToastContextType {
+    activate: (
+        type: "info" | "success" | "error",
+        message: string,
+        subtitle?: string,
+        duration?: number
+    ) => void;
+    toast: SingleToastData;
+    handleClose: () => void;
 }

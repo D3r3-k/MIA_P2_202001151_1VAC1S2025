@@ -68,9 +68,19 @@ export default function ContentPartition() {
 
         try {
             const data = await getContentFile(file.Path);
+            if (!data || typeof data !== 'object') {
+                console.error("Datos del archivo no válidos:", data);
+                return;
+            }
+            const dataP = data as FileSystemItemType;
             const fileWithContent: FileSystemItemType = {
                 ...file,
-                ...data
+                Content: dataP.Content || "",
+                CreatedAt: dataP.CreatedAt || "",
+                Extension: dataP.Extension || "",
+                Owner: dataP.Owner || "",
+                Permissions: dataP.Permissions || "",
+                Size: dataP.Size || "",
             };
             setViewingFile(fileWithContent);
             setIsFileViewMaximized(false);

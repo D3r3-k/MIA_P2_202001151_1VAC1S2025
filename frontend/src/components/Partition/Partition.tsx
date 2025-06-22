@@ -2,36 +2,65 @@
 
 import { useMia } from '@/hooks/useMia';
 import { HardDrive, Database, Folder, Activity } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+
 type PartitionProps = {
-    name: string
-    driveletter: string
-    size: string
-    type: string
-    filesystem: string
-    mountPoint: string
-    status: string
-    createDate: string
-    id: string
-    signature: string
-}
+    name: string;
+    driveletter: string;
+    size: string;
+    type: string;
+    filesystem: string;
+    mountPoint: string;
+    status: string;
+    createDate: string;
+    id: string;
+    signature: string;
+};
 
-export function Partition({ name, driveletter: disk, size, type, filesystem, mountPoint, status, createDate: lastCheck, id, signature }: PartitionProps) {
-    // Hooks
-    const { isAuthenticated, userData } = useMia();
-    // States
-    // Effects
-    // Handlers
+export function Partition({
+    name,
+    driveletter: disk,
+    size,
+    type,
+    filesystem,
+    mountPoint,
+    status,
+    createDate: lastCheck,
+    id,
+    signature,
+}: PartitionProps) {
+    const { isAuthenticated, userData, activateToast } = useMia();
+    const router = useRouter();
+    const [mounted, setMounted] = useState(false);
+
+    // Asegurar render en cliente
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const handleRedirect = () => {
-        if (!userData && id === "") {
-            return
-        } else if (!isAuthenticated) {
-            window.location.href = '/login?partition_id=' + id;
-        } else if (isAuthenticated && id === userData?.partition_id) {
-            window.location.href = `/drives/${disk}/${id}`;
+        if (!mounted) return;
+        if (status !== "Montada") {
+            activateToast("error", "No se pudo redirigir", "La partición no está montada. Debe montarla antes de acceder.");
+            return;
         }
+        if (!isAuthenticated) {
+            router.push(`/login?partition_id=${id}`);
+            return;
+        }
+        if (isAuthenticated && userData?.partition_id !== id) {
+            activateToast("error", "Sesión activa en otra partición", "Debe cerrar sesión antes de acceder a otra partición.");
+            return;
+        }
+        if (userData?.partition_id === id) {
+            router.push(`/drives/${disk}/${id}`);
+            return;
+        }
+        activateToast("error", "Redirección inválida", "No se pudo procesar la acción, intente nuevamente.");
+    };
 
-    }
-    // Functions
+
     const getStatusConfig = (status: string) => {
         switch (status) {
             case 'Montada':
@@ -44,6 +73,7 @@ export function Partition({ name, driveletter: disk, size, type, filesystem, mou
                 return { color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30', text: 'Desconocido' };
         }
     };
+
     const getTypeConfig = (type: string) => {
         switch (type.toLowerCase()) {
             case 'primaria':
@@ -58,14 +88,16 @@ export function Partition({ name, driveletter: disk, size, type, filesystem, mou
                 return { icon: Database, color: 'text-gray-400', bg: 'bg-gray-500/20', border: 'border-gray-500/30' };
         }
     };
-    // Renders
+
     const statusConfig = getStatusConfig(status);
     const typeConfig = getTypeConfig(type);
     const TypeIcon = typeConfig.icon;
+
     return (
         <div
             onClick={handleRedirect}
-            className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6 hover:bg-gray-800/50 transition-all duration-200 cursor-pointer">
+            className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-6 hover:bg-gray-800/50 transition-all duration-200 cursor-pointer"
+        >
             <div className="grid grid-cols-1 lg:grid-cols-8 gap-6 items-center">
                 {/* Información principal */}
                 <div className="lg:col-span-5">
