@@ -108,6 +108,7 @@ export default function ContentPartition() {
         const newPath = currentPath === '/' ? `/${folderName}` : `${currentPath}/${folderName}`;
         setCurrentPath(newPath);
         setPathHistory([...pathHistory, newPath]);
+        setViewingFile(null);
     };
     const goBack = () => {
         if (pathHistory.length > 1) {
@@ -115,6 +116,7 @@ export default function ContentPartition() {
             newPathHistory.pop();
             setPathHistory(newPathHistory);
             setCurrentPath(newPathHistory[newPathHistory.length - 1] || '/');
+            setViewingFile(null);
         }
     };
     const getPathSegments = () => {

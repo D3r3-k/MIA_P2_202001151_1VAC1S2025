@@ -18,7 +18,6 @@ export default function Login() {
         password: "",
     });
 
-    // ✅ Si ya hay sesión activa, redirigir a la ruta de su partición
     useEffect(() => {
         if (userData?.partition_id) {
             const driveLetter = userData.partition_id[0];
@@ -26,7 +25,6 @@ export default function Login() {
         }
     }, [userData, router]);
 
-    // Obtener partition_id de los query params
     useEffect(() => {
         const partitionId = params.get("partition_id") || "";
         setLoginData((prev) => ({
@@ -35,7 +33,6 @@ export default function Login() {
         }));
     }, [params]);
 
-    // Actualizar la URL al escribir el ID de partición
     useEffect(() => {
         const searchParams = new URLSearchParams();
         if (loginData.partitionId) {
@@ -67,7 +64,6 @@ export default function Login() {
         setLoginData((prev) => ({ ...prev, [name]: newValue }));
     };
 
-    // ✅ Mostrar mensaje mientras redirige si ya hay sesión
     if (userData?.partition_id) {
         return (
             <main className="min-h-screen flex items-center justify-center bg-gray-950">
