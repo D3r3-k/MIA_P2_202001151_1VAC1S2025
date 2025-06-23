@@ -254,3 +254,9 @@ func GetDrivePartitions(driveLetter string) ([]PartitionInfo, error) {
 	}
 	return Partitions, nil
 }
+
+type StandardResponse struct {
+	Error    string      `json:"error,omitempty"`
+	Response interface{} `json:"response,omitempty"`
+	Status   string      `json:"status"`
+}

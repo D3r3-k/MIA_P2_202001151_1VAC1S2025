@@ -2,6 +2,7 @@ package find
 
 import (
 	"MIA_PI_202001151_1VAC1S2025/manager/commands"
+	utilsApi "MIA_PI_202001151_1VAC1S2025/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,21 +30,26 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req FindRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Invalid request payload",
+			Response: nil,
+			Status:   "error",
+		})
 		return
 	}
 
-	// Ejecutar el comando find
 	output := commands.Fn_Find("-path=" + req.Path + " -name=*")
 	if output.Error != nil {
-		http.Error(w, "Error processing find command: "+output.Error.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Error processing find command: " + output.Error.Error(),
+			Response: nil,
+			Status:   "error",
+		})
 		return
 	}
 
-	root := req.Path
-	if root == "" {
-		root = "/"
-	}
 	var convertFindResponse func([]commands.FindResponse) []FileSystemItem
 	convertFindResponse = func(items []commands.FindResponse) []FileSystemItem {
 		var result []FileSystemItem
@@ -59,10 +65,14 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 		return result
 	}
 
-	formatted := FindResponse{
+	response := FindResponse{
 		Root: convertFindResponse(output.Object.Children),
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(formatted)
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Error:    "",
+		Response: response,
+		Status:   "success",
+	})
 }

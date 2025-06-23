@@ -13,7 +13,7 @@ interface GridDriveStatsProps {
 export default function GridDriveStats({ driveLetter }: GridDriveStatsProps) {
     const { getDriveInfo } = useFetchs();
     const [data, setData] = useState<DriveDiskInfoType>({
-        Name: driveLetter.toUpperCase(),
+        Name: driveLetter,
         Path: "N/A",
         Size: "0 B",
         Fit: "N/A",
@@ -68,7 +68,7 @@ export default function GridDriveStats({ driveLetter }: GridDriveStatsProps) {
             />
             <DriveStats
                 title="Fit"
-                value={data.Fit.toUpperCase()}
+                value={data.Fit}
                 color={{
                     color: "text-green-500",
                     bgColor: "from-green-500/10 to-green-500/30",

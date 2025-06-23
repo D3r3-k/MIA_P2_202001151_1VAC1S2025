@@ -70,57 +70,97 @@ const useFetchs = () => {
   };
 
   // [Drives]
-  const getDrivesStats = async (): Promise<DriveDiskStatusType> =>
-    fetchJson<DriveDiskStatusType>(
+  const getDrivesStats = async (): Promise<DriveDiskStatusType> => {
+    const response = await fetchJson<{
+      response: DriveDiskStatusType;
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/drives/info`,
       undefined,
       {
-        totalDisks: 0,
-        totalPartitions: 0,
-        totalSize: "0 B",
+        response: {
+          totalDisks: 0,
+          totalPartitions: 0,
+          totalSize: "0 B",
+        },
+        status: "error",
       },
       "No se pudo obtener el resumen de los discos."
     );
+    return response.response;
+  };
 
-  const getDrives = async (): Promise<DriveDiskType[]> =>
-    fetchJson<DriveDiskType[]>(
+  const getDrives = async (): Promise<DriveDiskType[]> => {
+    const response = await fetchJson<{
+      response: DriveDiskType[];
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/drives`,
       undefined,
-      [],
+      {
+        response: [],
+        status: "error",
+      },
       "No se pudo obtener la lista de discos."
     );
+    return response.response;
+  };
 
   // [Drive]
   const getDriveInfo = async (
     driveLetter: string
-  ): Promise<DriveDiskInfoType> =>
-    fetchJson<DriveDiskInfoType>(
+  ): Promise<DriveDiskInfoType> => {
+    const response = await fetchJson<{
+      response: DriveDiskInfoType;
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/drives/${driveLetter}`,
       undefined,
       {
-        Name: driveLetter.toUpperCase(),
-        Path: "N/A",
-        Size: "0 B",
-        Fit: "N/A",
-        Partitions: 0,
+        response: {
+          Name: "",
+          Path: "N/A",
+          Size: "0 B",
+          Fit: "N/A",
+          Partitions: 0,
+        },
+        status: "error",
       },
-      `No se pudo obtener la información del disco ${driveLetter.toUpperCase()}.`
+      `No se pudo obtener la información del disco.`
     );
+    return response.response;
+  };
 
   const getPartitions = async (
     driveLetter: string
-  ): Promise<DrivePartitionType[]> =>
-    fetchJson<DrivePartitionType[]>(
+  ): Promise<DrivePartitionType[]> => {
+    const response = await fetchJson<{
+      response: DrivePartitionType[];
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/drives/${driveLetter}/partitions`,
       undefined,
-      [],
-      `No se pudieron obtener las particiones del disco ${driveLetter.toUpperCase()}.`
+      {
+        response: [],
+        status: "error",
+      },
+      `No se pudieron obtener las particiones del disco.`
     );
+    return response.response;
+  };
 
   const getFileSystemItems = async (
     path: string
-  ): Promise<FileSystemItemType | []> =>
-    fetchJson<FileSystemItemType | []>(
+  ): Promise<FileSystemItemType | []> => {
+    const response = await fetchJson<{
+      response: FileSystemItemType | [];
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/find`,
       {
         method: "POST",
@@ -129,12 +169,21 @@ const useFetchs = () => {
         },
         body: JSON.stringify({ path }),
       },
-      [],
+      {
+        response: [],
+        status: "error",
+      },
       `No se pudo obtener el contenido de la ruta "${path}".`
     );
+    return response.response;
+  };
 
-  const getContentFile = async (path: string): Promise<string> =>
-    fetchJson<string>(
+  const getContentFile = async (path: string): Promise<string> => {
+    const response = await fetchJson<{
+      response: string;
+      status: string;
+      error?: string;
+    }>(
       `${baseUrl}/api/cat`,
       {
         method: "POST",
@@ -143,9 +192,14 @@ const useFetchs = () => {
         },
         body: JSON.stringify({ path }),
       },
-      "",
+      {
+        response: "",
+        status: "error",
+      },
       `No se pudo leer el archivo "${path}".`
     );
+    return response.response;
+  };
 
   return {
     executeCommand,

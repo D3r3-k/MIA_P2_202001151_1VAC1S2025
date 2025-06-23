@@ -310,7 +310,7 @@ export default function ContentPartition() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
                                             <span className="px-2 py-1 rounded border border-gray-600 bg-gray-700/30 text-xs text-gray-400">
-                                                {viewingFile.Extension?.toUpperCase() || "ARCHIVO"}
+                                                {viewingFile.Extension || "N/A"}
                                             </span>
                                             <span className="px-2 py-1 rounded border border-gray-600 bg-gray-700/30 text-xs text-gray-400">
                                                 {viewingFile.Permissions}

@@ -10,13 +10,16 @@ import Head from 'next/head';
 export async function getStaticPaths() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/drives`);
     if (!res.ok) {
-        throw new Error('Failed to fetch drives data');
+        return {
+            paths: [],
+            fallback: false,
+        };
     }
 
-    const drivesData: DriveDiskInfoType[] = await res.json();
+    const drivesData = await res.json();
     const paths: { params: { driveletter: string; partition_id: string } }[] = [];
 
-    for (const drive of drivesData) {
+    for (const drive of drivesData?.response) {
         const driveLetter = drive?.Name;
         if (!driveLetter) continue;
 
@@ -27,7 +30,7 @@ export async function getStaticPaths() {
 
         const partitionsData = await partitionsRes.json();
 
-        for (const partition of partitionsData) {
+        for (const partition of partitionsData?.response) {
             const partitionId = partition?.ID;
             if (typeof partitionId === 'string' && partitionId.trim() !== '') {
                 paths.push({

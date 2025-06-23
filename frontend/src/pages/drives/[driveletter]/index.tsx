@@ -8,7 +8,13 @@ import { Suspense } from "react";
 
 export async function getStaticPaths() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/drives`).then((res) => res.json());
-    const drives = res.map((item: DriveDiskInfoType) => item.Name);
+    if (!res) {
+        return {
+            paths: [],
+            fallback: false,
+        };
+    }
+    const drives = res?.response.map((item: DriveDiskInfoType) => item.Name);
     const paths = drives.map((driveletter: string) => ({
         params: { driveletter: String(driveletter) },
     }));
@@ -38,10 +44,10 @@ export default function DrivePage({ driveletter }: { driveletter: string }) {
                 <div className="mb-8 grid grid-cols-2 gap-6">
                     <div className="flex flex-col justify-center">
                         <h1 className="text-3xl font-bold text-white mb-2">
-                            Gestión del Disco {driveletter.toUpperCase()}
+                            Gestión del Disco {driveletter && driveletter.toUpperCase()}
                         </h1>
                         <p className="text-gray-400">
-                            Administra y monitorea las particiones del disco {driveletter.toUpperCase()} del sistema
+                            Administra y monitorea las particiones del disco {driveletter && driveletter.toUpperCase()} del sistema
                         </p>
                     </div>
                     <Suspense fallback={

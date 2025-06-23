@@ -80,7 +80,7 @@ export default function Sidebar() {
                                     </Link>
 
                                     {/* Subenlace a partición si aplica */}
-                                    {item.path === "/drives" && pathname.includes("/drives") && userData?.partition_id && (
+                                    {item.path === "/drives" && userData?.partition_id && (
                                         <div className="ml-5 mt-1">
                                             <span className="ml-1 text-xs text-gray-400">Sesión iniciada en</span>
                                             <div className="flex border-l border-gray-500 items-center justify-center ml-1">

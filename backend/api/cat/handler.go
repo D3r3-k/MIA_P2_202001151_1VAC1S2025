@@ -2,6 +2,7 @@ package cat
 
 import (
 	"MIA_PI_202001151_1VAC1S2025/manager/commands"
+	utilsApi "MIA_PI_202001151_1VAC1S2025/utils"
 	"encoding/json"
 	"net/http"
 )
@@ -26,20 +27,43 @@ type CatResponse struct {
 
 func CatHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	var req CatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Invalid request payload",
+			Response: nil,
+			Status:   "error",
+		})
 		return
 	}
+
 	cat, err := commands.Fn_Cat("-file1=" + req.Path)
 	if err != nil {
-		http.Error(w, "Error processing cat command: "+err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Error processing cat command: " + err.Error(),
+			Response: nil,
+			Status:   "error",
+		})
 		return
 	}
+
 	if cat == nil {
-		http.Error(w, "File not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "File not found",
+			Response: nil,
+			Status:   "error",
+		})
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(cat)
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Error:    "",
+		Response: cat,
+		Status:   "success",
+	})
 }

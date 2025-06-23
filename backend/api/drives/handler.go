@@ -3,7 +3,6 @@ package drivesInfo
 import (
 	utilsApi "MIA_PI_202001151_1VAC1S2025/utils"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -17,38 +16,50 @@ type DrivesInfoResponse struct {
 
 func DrivesInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	totalDisks := 0
-	totalPartitions := 0
-	totalSize := "N/A"
-	totalDisks = utilsApi.CountDisks()
-	totalPartitions, totalSize = utilsApi.CalculateTotalPartitions()
+
+	totalDisks := utilsApi.CountDisks()
+	totalPartitions, totalSize := utilsApi.CalculateTotalPartitions()
 
 	response := DrivesInfoResponse{
 		TotalDisks:      totalDisks,
 		TotalPartitions: totalPartitions,
 		TotalSize:       totalSize,
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Response: response,
+		Status:   "success",
+	})
 }
 
 func DrivesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	data, err := utilsApi.GetDiskInfo()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Ha ocurrido un error al obtener la informacion de los discos",
+			Status:   "error",
+			Response: []interface{}{},
+		})
 		return
 	}
+
 	if len(data) == 0 {
-		http.Error(w, "No disks found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "No hay discos disponibles",
+			Status:   "error",
+			Response: []interface{}{},
+		})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Response: data,
+		Status:   "success",
+	})
 }
 
 type DriveInfoResponse struct {
@@ -61,34 +72,59 @@ type DriveInfoResponse struct {
 
 func DriveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	response := DriveInfoResponse{
+		Name:       "",
+		Path:       "",
+		Size:       "",
+		Fit:        "",
+		Partitions: 0,
+	}
+
 	driveletter := mux.Vars(r)["driveletter"]
 	if driveletter == "" {
-		http.Error(w, "Missing drive letter", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Missing drive letter",
+			Status:   "error",
+			Response: response,
+		})
 		return
 	}
+
 	data, err := utilsApi.GetDriveInfo(driveletter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    err.Error(),
+			Status:   "error",
+			Response: response,
+		})
 		return
 	}
+
 	if data == (utilsApi.DriveInfo{}) {
-		http.Error(w, "Drive not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Drive not found",
+			Status:   "error",
+			Response: response,
+		})
 		return
 	}
+
 	_size := utilsApi.ConvertSizeToString(data.Size)
-	response := DriveInfoResponse{
+	response = DriveInfoResponse{
 		Name:       data.Name,
 		Path:       data.Path,
 		Size:       _size,
 		Fit:        data.Fit,
 		Partitions: data.Partitions,
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Println("Error encoding response:", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Response: response,
+		Status:   "success",
+	})
 }
 
 type DrivePartitionsResponse struct {
@@ -108,22 +144,41 @@ type DrivePartitionsResponse struct {
 
 func DrivePartitionsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	driveletter := mux.Vars(r)["driveletter"]
 	if driveletter == "" {
-		http.Error(w, "Missing drive letter", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Missing drive letter",
+			Status:   "error",
+			Response: []interface{}{},
+		})
 		return
 	}
+
 	data, err := utilsApi.GetDrivePartitions(driveletter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    err.Error(),
+			Status:   "error",
+			Response: []interface{}{},
+		})
 		return
 	}
+
 	if data == nil {
-		http.Error(w, "Drive not found", http.StatusNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+			Error:    "Drive not found",
+			Status:   "error",
+			Response: []interface{}{},
+		})
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+
+	json.NewEncoder(w).Encode(utilsApi.StandardResponse{
+		Response: data,
+		Status:   "success",
+	})
 }
