@@ -18,17 +18,18 @@ export default function Sidebar() {
 
     const isActive = (path: string): boolean => {
         if (!pathname) return false;
-
         const currentPartitionPath = userData?.partition_id
             ? `/drives/${userData.partition_id[0]}/${userData.partition_id}`
             : '';
 
-        return (
-            pathname === path ||
-            (path === '/drives' && pathname.startsWith('/drives')) ||
-            pathname === currentPartitionPath
-        );
+        if (path === '/') return pathname === '/';
+        if (path === '/login') return pathname.startsWith('/login');
+        if (path === '/drives') return pathname.startsWith('/drives');
+        if (path === currentPartitionPath) return pathname === currentPartitionPath;
+
+        return pathname === path;
     };
+
 
     const activeClass = "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
     const defaultClass = "text-gray-300 hover:text-white hover:bg-gray-700/60";
