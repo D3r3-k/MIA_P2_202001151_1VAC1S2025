@@ -7,9 +7,13 @@ import { DrivePartitionType } from "@/types/GlobalTypes";
 
 interface GridPartitionsProps {
     driveletter: string;
+    onSelectPartition?: (partitionId: string) => void;
 }
 
-export default function GridPartitions({ driveletter }: GridPartitionsProps) {
+export default function GridPartitions({
+    driveletter,
+    onSelectPartition,
+}: GridPartitionsProps) {
     const { getPartitions } = useFetchs();
     const [partitions, setPartitions] = useState<DrivePartitionType[]>([]);
 
@@ -37,6 +41,7 @@ export default function GridPartitions({ driveletter }: GridPartitionsProps) {
                         createDate={partition.Date}
                         id={partition.ID}
                         signature={partition.Signature}
+                        onSelect={onSelectPartition}
                     />
                 ))
             ) : (

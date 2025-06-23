@@ -1,35 +1,24 @@
 "use client";
 
 import { useMia } from '@/hooks/useMia';
+import { Route } from '@/types/GlobalTypes';
 import { HardDrive, LogIn, Power, Terminal, User } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
 import React from 'react';
 
-const menuItems = [
-    { icon: Terminal, label: 'Consola', path: '/' },
-    { icon: HardDrive, label: 'Discos', path: '/drives' },
-    { icon: LogIn, label: 'Iniciar Sesión', path: '/login' }
+const menuItems: { icon: React.ElementType; label: string; route: Route }[] = [
+    { icon: Terminal, label: 'Consola', route: "/" },
+    { icon: HardDrive, label: 'Discos', route: "drives" },
+    { icon: LogIn, label: 'Iniciar Sesión', route: "login" }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+    activeRoute,
+    setRoute,
+}: {
+    activeRoute: Route;
+    setRoute: (route: Route) => void;
+}) {
     const { systemState, isAuthenticated, logout, userData } = useMia();
-    const pathname = usePathname();
-
-    const isActive = (path: string): boolean => {
-        if (!pathname) return false;
-        const currentPartitionPath = userData?.partition_id
-            ? `/drives/${userData.partition_id[0]}/${userData.partition_id}`
-            : '';
-
-        if (path === '/') return pathname === '/';
-        if (path === '/login') return pathname.startsWith('/login');
-        if (path === '/drives') return pathname.startsWith('/drives');
-        if (path === currentPartitionPath) return pathname === currentPartitionPath;
-
-        return pathname === path;
-    };
-
 
     const activeClass = "bg-gradient-to-r from-corinto-600 to-corinto-700 text-white shadow-lg shadow-corinto-600/25";
     const defaultClass = "text-gray-300 hover:text-white hover:bg-gray-700/60";
@@ -59,76 +48,57 @@ export default function Sidebar() {
                         Navegación
                     </h3>
                     <nav className="space-y-2">
-                        {menuItems.map((item, index) => {
-                            if (item.path === '/login' && isAuthenticated) return null;
+                        {menuItems.map(({ icon: Icon, label, route }, index) => {
+                            if (route === "login" && isAuthenticated) return null;
 
-                            const active = isActive(item.path);
+                            const isActive = activeRoute === route;
+                            const baseClasses = "w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer";
+                            const classes = isActive ? `${baseClasses} ${activeClass}` : `${baseClasses} ${defaultClass}`;
 
                             return (
-                                <div key={index}>
-                                    <Link
-                                        href={item.path}
-                                        className={`w-full max-w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer ${active ? activeClass : defaultClass}`}
-                                    >
-                                        <div className="flex items-center space-x-3 flex-1">
-                                            <item.icon className="w-4 h-4 flex-shrink-0" />
-                                            <span className="font-medium text-sm truncate">{item.label}</span>
-                                        </div>
-                                        {active && (
-                                            <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />
-                                        )}
-                                    </Link>
-
-                                    {/* Subenlace a partición si aplica */}
-                                    {item.path === "/drives" && userData?.partition_id && (
-                                        <div className="ml-5 mt-1">
-                                            <span className="ml-1 text-xs text-gray-400">Sesión iniciada en</span>
-                                            <div className="flex border-l border-gray-500 items-center justify-center ml-1">
-                                                <Link
-                                                    href={`/drives/${userData.partition_id[0]}/${userData.partition_id}`}
-                                                    className={`flex items-center w-full text-left text-gray-300 hover:text-white hover:bg-gray-700/60 px-3 py-2 rounded-md text-sm ml-3 my-1 ${isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`) ? activeClass : defaultClass}`}
-                                                >
-                                                    <div className="flex items-center space-x-3 flex-1">
-                                                        {`Partición: ${userData.partition_id}`}
-                                                    </div>
-                                                    {isActive(`/drives/${userData.partition_id[0]}/${userData.partition_id}`) && (
-                                                        <div className="w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />
-                                                    )}
-                                                </Link>
-                                            </div>
-                                        </div>
+                                <button
+                                    key={index}
+                                    onClick={() => setRoute(route)}
+                                    className={classes}
+                                    aria-current={isActive ? "page" : undefined}
+                                >
+                                    <div className="flex items-center space-x-3 flex-1">
+                                        <Icon className="w-4 h-4 flex-shrink-0" />
+                                        <span className="font-medium text-sm truncate">{label}</span>
+                                    </div>
+                                    {isActive && (
+                                        <span className="ml-2 w-2 h-2 bg-white rounded-full opacity-90 flex-shrink-0" />
                                     )}
-                                </div>
+                                </button>
                             );
                         })}
                     </nav>
+
                 </div>
             </div>
 
             {/* Usuario autenticado */}
-            {isAuthenticated && (
+            {isAuthenticated && userData && (
                 <>
                     <div className="p-5 border-t border-gray-700/30 flex-shrink-0">
-                        <div className="space-y-3">
-                            <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/30 rounded-xl p-4 border border-gray-700/30 relative">
-                                <div className="flex items-start space-x-3">
-                                    <User size={24} className="text-gray-300" />
-                                    <div>
-                                        <p className="text-xs text-gray-400">Partición</p>
-                                        <p className="text-sm font-semibold text-white mb-1">{userData?.partition_id}</p>
-                                        <div className="flex items-center space-x-4">
-                                            <div>
-                                                <span className="text-xs text-gray-400">Usuario</span>
-                                                <span className="block text-xs font-medium text-gray-200">{userData?.username}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-gray-400">Grupo</span>
-                                                <span className="block text-xs font-medium text-gray-200">{userData?.group}</span>
-                                            </div>
+                        <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/30 rounded-xl p-4 border border-gray-700/30 relative">
+                            <div className="flex items-start space-x-3">
+                                <User size={24} className="text-gray-300" />
+                                <div>
+                                    <p className="text-xs text-gray-400">Partición</p>
+                                    <p className="text-sm font-semibold text-white mb-1">{userData.partition_id}</p>
+                                    <div className="flex items-center space-x-4">
+                                        <div>
+                                            <span className="text-xs text-gray-400">Usuario</span>
+                                            <span className="block text-xs font-medium text-gray-200">{userData.username}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-gray-400">Grupo</span>
+                                            <span className="block text-xs font-medium text-gray-200">{userData.group}</span>
                                         </div>
                                     </div>
-                                    <div className="w-2 h-2 bg-green-400 rounded-full opacity-90 absolute right-0 mx-3" />
                                 </div>
+                                <div className="w-2 h-2 bg-green-400 rounded-full opacity-90 absolute right-0 mx-3" />
                             </div>
                         </div>
                     </div>
@@ -152,11 +122,13 @@ export default function Sidebar() {
                     <div className="space-y-2.5">
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-gray-400">Backend</span>
-                            <div className='flex items-center space-x-2'>
-                                {systemState
-                                    ? <span className="text-xs font-medium text-green-400">Activo</span>
-                                    : <span className="text-xs font-medium text-corinto-400">Inactivo</span>}
-                                <div className={`w-2 h-2 rounded-full ${systemState ? 'bg-green-400' : 'bg-corinto-400'}`} />
+                            <div className="flex items-center space-x-2">
+                                {systemState ? (
+                                    <span className="text-xs font-medium text-green-400">Activo</span>
+                                ) : (
+                                    <span className="text-xs font-medium text-corinto-400">Inactivo</span>
+                                )}
+                                <div className={`w-2 h-2 rounded-full ${systemState ? "bg-green-400" : "bg-corinto-400"}`} />
                             </div>
                         </div>
                     </div>

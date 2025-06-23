@@ -10,7 +10,6 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     // States
     const [systemState, setSystemState] = useState(false);
     const [loading, setLoading] = useState<boolean>(false);
-    // ? Toast
     const [toast, setToast] = useState<SingleToastData>({
         message: "",
         subtitle: "",
@@ -18,9 +17,6 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         duration: 6000,
         visible: false,
     });
-    // ? Partitions
-    // ? Files
-    // ? Loading 
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -43,9 +39,8 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
             }
         } catch (error) {
             const err = error as Error;
-            activateToast("error", err.message || "Error al cargar los datos del usuario desde localStorage.", "Por favor, recarga la página.");
-            setUserData(null);
-            setIsAuthenticated(false);
+            activateToast("error", err.message || "Error al cargar sesión", "Reinicia la página.");
+            handleSessionReset();
         }
     }, []);
 
@@ -53,7 +48,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         const fetchSystemStatus = async () => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/status`);
-                if (!response.ok) throw new Error("Fallo al obtener el estado del sistema");
+                if (!response.ok) throw new Error("Fallo al obtener estado del sistema");
 
                 const data = await response.json();
                 setSystemState(data.status ?? false);
@@ -69,7 +64,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             } catch (error) {
                 const err = error as Error;
-                activateToast("error", err.message || "Error al obtener el estado del sistema.", "Por favor, recarga la página.");
+                activateToast("error", err.message || "Error de estado", "Revisa la conexión");
                 setSystemState(false);
                 handleSessionReset();
             }
@@ -78,7 +73,10 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         fetchSystemStatus();
     }, []);
 
-    // Utils
+    // Handlers
+    const handleClose = () => {
+        setToast((prev) => ({ ...prev, visible: false }));
+    };
     const handleSessionReset = () => {
         localStorage.removeItem("userData");
         document.cookie = "authToken=false; path=/; max-age=0";
@@ -86,75 +84,7 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         setUserData(null);
     };
 
-    // Handlers
-    const login = async ({
-        partition_id,
-        username,
-        password,
-    }: {
-        partition_id: string;
-        username: string;
-        password: string;
-    }) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ partition_id, username, password }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Error al iniciar sesión. Verifica tus credenciales.");
-            }
-
-            const data = await response.json();
-            document.cookie = `authToken=${data.token}; path=/;`;
-            if (data.user_data) {
-                localStorage.setItem("userData", JSON.stringify(data.user_data));
-                setUserData(data.user_data);
-                setIsAuthenticated(true);
-            }
-
-            if (typeof window !== "undefined") {
-                window.location.href = "/drives";
-            }
-
-            return true;
-        } catch (error) {
-            const err = error as Error;
-            activateToast("error", "Error al iniciar sesión.", err.message || "Error desconocido.");
-            setIsAuthenticated(false);
-            setUserData(null);
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const logout = async () => {
-        setLoading(true);
-        try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-        } catch (error) {
-            const err = error as Error;
-            activateToast("error", "Error al cerrar sesión.", err.message || "Por favor, recarga la página.");
-        } finally {
-            setLoading(false);
-            handleSessionReset();
-            if (typeof window !== "undefined") {
-                window.location.href = "/";
-            }
-        }
-    };
-
+    // Functions
     const activateToast = (
         type: "info" | "success" | "error",
         message: string,
@@ -171,10 +101,63 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const handleClose = () => {
-        setToast((prev) => ({ ...prev, visible: false }));
+    const login = async ({
+        partition_id,
+        username,
+        password,
+    }: {
+        partition_id: string;
+        username: string;
+        password: string;
+    }): Promise<boolean> => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ partition_id, username, password }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Credenciales incorrectas.");
+            }
+
+            const data = await response.json();
+            document.cookie = `authToken=${data.token}; path=/;`;
+
+            if (data.user_data) {
+                localStorage.setItem("userData", JSON.stringify(data.user_data));
+                setUserData(data.user_data);
+                setIsAuthenticated(true);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            const err = error as Error;
+            activateToast("error", "Error al iniciar sesión", err.message);
+            handleSessionReset();
+            return false;
+        } finally {
+            setLoading(false);
+        }
     };
 
+    const logout = async () => {
+        setLoading(true);
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/logout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+        } catch (error) {
+            const err = error as Error;
+            activateToast("error", "Error al cerrar sesión", err.message || "Intenta nuevamente");
+        } finally {
+            setLoading(false);
+            handleSessionReset();
+        }
+    };
     // Renders
     return (
         <MiaContext.Provider

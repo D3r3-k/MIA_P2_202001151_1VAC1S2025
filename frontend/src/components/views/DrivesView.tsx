@@ -1,11 +1,33 @@
-import SkeletonDriveDisk from '@/components/DriveDisk/SkeletonDriveDisk'
-import SkeletonStatsCard from '@/components/DriveStats/SkeletonStatsCard'
-import GridDrives from '@/components/Grids/GridDrives'
-import GridDrivesStats from '@/components/Grids/GridDrivesStats'
-import Head from 'next/head'
-import React, { Suspense } from 'react'
+import { useEffect, useState, Suspense } from "react";
+import Head from "next/head";
+import SkeletonDriveDisk from "@/components/DriveDisk/SkeletonDriveDisk";
+import SkeletonStatsCard from "@/components/DriveStats/SkeletonStatsCard";
+import GridDrivesStats from "@/components/Grids/GridDrivesStats";
+import { DriveDiskInfoType } from "@/types/GlobalTypes";
+import DriveDisk from "../DriveDisk/DriveDisk";
+import useFetchs from "@/hooks/useFetchs";
 
-export default function Drives() {
+export default function DrivesView({
+    onSelectDrive,
+}: {
+    onSelectDrive: (driveLetter: string) => void;
+}) {
+    const { getDrives } = useFetchs();
+    const [drives, setDrives] = useState<DriveDiskInfoType[]>([]);
+
+    useEffect(() => {
+        const fetchDrives = async () => {
+            const data = await getDrives();
+            setDrives(data || []);
+        };
+
+        fetchDrives();
+    }, []);
+
+    const handleDriveClick = (driveLetter: string) => {
+        onSelectDrive(driveLetter);
+    };
+
     return (
         <>
             <Head>
@@ -48,10 +70,27 @@ export default function Drives() {
                             </div>
                         }
                     >
-                        <GridDrives />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {drives.length === 0 && (
+                                <div className="col-span-4 text-center text-gray-400">
+                                    No hay discos disponibles.
+                                </div>
+                            )}
+                            {drives.map((drive, index) => (
+                                <DriveDisk
+                                    key={index}
+                                    name={`Disco ${drive.Name}`}
+                                    partitions={drive.Partitions}
+                                    size={drive.Size}
+                                    fit={drive.Fit}
+                                    path={drive.Path}
+                                    onClick={() => handleDriveClick(drive.Name)}
+                                />
+                            ))}
+                        </div>
                     </Suspense>
                 </div>
             </main>
         </>
-    )
+    );
 }

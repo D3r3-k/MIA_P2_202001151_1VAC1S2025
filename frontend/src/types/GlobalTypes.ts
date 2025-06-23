@@ -47,3 +47,11 @@ export type FileSystemItemType = {
   Extension?: string;
   Permissions?: string;
 };
+
+
+export type Route =
+    | "login"
+    | "drives"
+    | "drive-detail"
+    | "partition"
+    | "/";
