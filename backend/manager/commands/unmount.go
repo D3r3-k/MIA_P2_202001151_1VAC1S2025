@@ -1,46 +1,54 @@
 package commands
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
 	globals "MIA_PI_202001151_1VAC1S2025/manager/global"
 	Structs "MIA_PI_202001151_1VAC1S2025/manager/structs"
 	"MIA_PI_202001151_1VAC1S2025/manager/utils"
-	"fmt"
-	"strings"
 )
 
-func Fn_Unmount(params string) {
+func Fn_Unmount(params string) (string, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-id": {Required: true},
 	}
+
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
-		println(err.Error())
-		return
+		return "", err
 	}
+
 	id := strings.TrimSpace(parsed["-id"])
-	Unmount(id)
+	return Unmount(id)
 }
 
-// Mount -driveletter=<driveLetter> [-name=<name>]
-func Unmount(id string) {
+func Unmount(id string) (string, error) {
+	if len(id) < 2 {
+		return "", errors.New("el ID proporcionado es inválido")
+	}
+
 	driveLetter := strings.ToUpper(id[:1])
 	path := globals.PathDisks + driveLetter + ".dsk"
+
 	file, err := utils.OpenFile(path)
 	if err != nil {
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco [%s]: %v", driveLetter, err)
 	}
 	defer file.Close()
 
-	var tempMBR Structs.MBR
-	if err := utils.ReadObject(file, &tempMBR, 0); err != nil {
-		return
+	var mbr Structs.MBR
+	if err := utils.ReadObject(file, &mbr, 0); err != nil {
+		return "", fmt.Errorf("no se pudo leer el MBR del disco [%s]: %v", driveLetter, err)
 	}
-	var index int = -1
-	for i, partition := range tempMBR.Partitions {
-		if strings.Contains(string(partition.Id[:]), id) {
+
+	index := -1
+	for i, partition := range mbr.Partitions {
+		partID := strings.TrimRight(string(partition.Id[:]), "\x00")
+		if partID == id {
 			if partition.Id == [4]byte{} {
-				utils.ShowMessage("La partición con ID: "+id+" ya está desmontada.", true)
-				return
+				return "", fmt.Errorf("la partición con ID [%s] ya está desmontada", id)
 			}
 			index = i
 			break
@@ -48,21 +56,18 @@ func Unmount(id string) {
 	}
 
 	if index == -1 {
-		utils.ShowMessage("No se encontró la partición con ID: "+id, true)
-		return
+		return "", fmt.Errorf("no se encontró una partición con ID [%s] en el disco [%s]", id, driveLetter)
 	}
 
-	if index < 0 || index >= len(tempMBR.Partitions) {
-		utils.ShowMessage("Índice de partición inválido: "+fmt.Sprint(index), true)
-		return
-	}
-	tempMBR.Partitions[index].Id = [4]byte{}
-	copy(tempMBR.Partitions[index].Status[:], "0")
-	tempMBR.Partitions[index].Correlative = 0
+	// Limpiar datos de montaje
+	mbr.Partitions[index].Id = [4]byte{}
+	copy(mbr.Partitions[index].Status[:], "0")
+	mbr.Partitions[index].Correlative = 0
 
-	if err := utils.WriteObject(file, tempMBR, 0); err != nil {
-		return
+	if err := utils.WriteObject(file, mbr, 0); err != nil {
+		return "", fmt.Errorf("no se pudo escribir los cambios al disco [%s]: %v", driveLetter, err)
 	}
-	Structs.PrintPartitions(tempMBR, driveLetter)
-	utils.ShowMessage("La partición ["+id+"] del disco ["+driveLetter+"] ha sido desmontada.", false)
+
+	Structs.PrintPartitions(mbr, driveLetter)
+	return fmt.Sprintf("Partición [%s] desmontada exitosamente del disco [%s]", id, driveLetter), nil
 }

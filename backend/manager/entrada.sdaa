@@ -71,8 +71,8 @@ mkfs -type=full -id=B151 -fs=2fs
 mkfs -type=full -id=C151 -fs=3fs
 pause
 
-rep -id=A151 -path=reportes/MBRPE.svg -name=mbr
-rep -id=A151 -path=reportes/disk.svg -name=disk
+rep -id=A151 -path=manager/reportes/MBRPE.svg -name=mbr
+rep -id=A151 -path=manager/reportes/disk.svg -name=disk
 
 # =====COLOCAR LOS DÍGITOS DEL CARNET=====
 # ERROR NO EXISTE EL USUARIO
@@ -168,15 +168,15 @@ pause
 
 
 # ==== COLOCAR LOS DIGITOS DEL CARNET Y COMPLETAR LA RUTA ====
-rep -id=A151 -path=reportes/inode_test.svg -name=inode
-rep -id=A151 -path=reportes/block_test.svg -name=block
-rep -id=A151 -path=reportes/tree_test.svg -name=tree
-rep -id=A151 -path=reportes/sb_test.svg -name=sb
-rep -id=A151 -path=reportes/bm_inode_test.txt -name=bm_inode
-rep -id=A151 -path=reportes/bm_block_test.txt -name=bm_block
-rep -id=A151 -path=reportes/journal_test.svg -name=JourNALING
-rep -id=A151 -path=reportes/file_small1.txt -ruta=/home/user/docs/a.txt -name=file
-rep -id=A151 -path=reportes/ls_docs.svg -ruta=/home/user/docs -name=ls
+rep -id=A151 -path=manager/reportes/inode_test.svg -name=inode
+rep -id=A151 -path=manager/reportes/block_test.svg -name=block
+rep -id=A151 -path=manager/reportes/tree_test.svg -name=tree
+rep -id=A151 -path=manager/reportes/sb_test.svg -name=sb
+rep -id=A151 -path=manager/reportes/bm_inode_test.txt -name=bm_inode
+rep -id=A151 -path=manager/reportes/bm_block_test.txt -name=bm_block
+rep -id=A151 -path=manager/reportes/journal_test.svg -name=JourNALING
+rep -id=A151 -path=manager/reportes/file_small1.txt -ruta=/home/user/docs/a.txt -name=file
+rep -id=A151 -path=manager/reportes/ls_docs.svg -ruta=/home/user/docs -name=ls
 
 
 find -path=/ -name=*

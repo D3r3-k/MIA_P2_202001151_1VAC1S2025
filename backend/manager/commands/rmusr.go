@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func Fn_Rmusr(params string) {
+func Fn_Rmusr(params string) (string, error) {
 	if globals.LoginSession.User == "" {
 		utils.ShowMessage("Debe iniciar sesión primero.", true)
-		return
+		return "", fmt.Errorf("debe iniciar sesión primero")
 	}
 	paramDefs := map[string]Structs.ParamDef{
 		"-user": {Required: true},
@@ -20,43 +20,43 @@ func Fn_Rmusr(params string) {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return
+		return "", err
 	}
 	user := strings.TrimSpace(parsed["-user"])
 
 	if globals.LoginSession.User != "root" {
 		utils.ShowMessage("Solo el usuario root puede eliminar usuarios.", true)
-		return
+		return "", fmt.Errorf("solo el usuario root puede eliminar usuarios")
 	}
 	part := utils.GetPartitionById(string(globals.LoginSession.PartitionID[:]))
 	if part == nil {
 		utils.ShowMessage("La partición de la sesión no está montada.", true)
-		return
+		return "", fmt.Errorf("la partición de la sesión no está montada")
 	}
-	Rmusr(user, part)
+	return Rmusr(user, part)
 }
 
 // rmusr -user=<usuario>
-func Rmusr(user string, part *Structs.Partition) {
+func Rmusr(user string, part *Structs.Partition) (string, error) {
 	drive := strings.ToUpper(string(part.Id[0]))
 	path := globals.PathDisks + drive + ".dsk"
 	file, err := utils.OpenFile(path)
 	if err != nil {
 		utils.ShowMessage("No se pudo abrir el disco: "+path, true)
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco: %s", path)
 	}
 	defer file.Close()
 
 	var sb Structs.Superblock
 	if err := utils.ReadObject(file, &sb, int64(part.Start)); err != nil {
 		utils.ShowMessage("No se pudo leer el superbloque.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el superbloque: %v", err)
 	}
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 	var inodeUser Structs.Inode
 	if err := utils.ReadObject(file, &inodeUser, int64(sb.S_inode_start+inodoSize*1)); err != nil {
 		utils.ShowMessage("No se pudo leer el inodo de users.txt.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el inodo de users.txt: %v", err)
 	}
 	blockSize := int32(binary.Size(Structs.Fileblock{}))
 
@@ -71,7 +71,7 @@ func Rmusr(user string, part *Structs.Partition) {
 		offset := int64(sb.S_block_start + blockSize*blockNum)
 		if err := utils.ReadObject(file, &blk, offset); err != nil {
 			utils.ShowMessage("No se pudo leer el bloque "+fmt.Sprint(blockNum)+" de users.txt.", true)
-			return
+			return "", fmt.Errorf("no se pudo leer el bloque %d de users.txt: %v", blockNum, err)
 		}
 		fullContent += string(blk.B_content[:])
 		bloquesUsados = append(bloquesUsados, blockNum)
@@ -90,7 +90,7 @@ func Rmusr(user string, part *Structs.Partition) {
 	}
 	if !found {
 		utils.ShowMessage("No existe un usuario activo con el nombre '"+user+"'.", true)
-		return
+		return "", fmt.Errorf("no existe un usuario activo con el nombre '%s'", user)
 	}
 
 	finalContent := strings.Join(lines, "\n")
@@ -115,4 +115,5 @@ func Rmusr(user string, part *Structs.Partition) {
 	utils.WriteJournaling(sb, *part, file, []byte("rmgrp"), part.Name[:], []byte("remove_"+user))
 
 	utils.ShowMessage("Usuario ["+user+"] eliminado exitosamente.", false)
+	return "Usuario [" + user + "] eliminado exitosamente.", nil
 }

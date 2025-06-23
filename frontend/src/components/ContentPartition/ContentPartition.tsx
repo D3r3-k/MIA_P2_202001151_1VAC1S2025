@@ -1,6 +1,7 @@
 "use client";
 
 import useFetchs from "@/hooks/useFetchs";
+import { useMia } from "@/hooks/useMia";
 import { FileSystemItemType } from "@/types/GlobalTypes";
 import { ArrowLeft, ChevronRight, File, Folder, HardDrive, Maximize2, Minimize2, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import { useEffect, useState } from "react";
 export default function ContentPartition() {
     // Hooks
     const { getFileSystemItems, getContentFile } = useFetchs();
+    const { activateToast } = useMia();
     // States
     const [rootItems, setRootItems] = useState<FileSystemItemType[]>([]);
     const [currentPath, setCurrentPath] = useState('/');
@@ -33,7 +35,8 @@ export default function ContentPartition() {
                 });
                 setRootItems(sorted);
             } catch (error) {
-                console.error("Error fetching file system items:", error);
+                const err = error as Error;
+                activateToast("error", "Error al cargar el sistema de archivos", err.message || "Error desconocido");
                 setRootItems([]);
             }
         };
@@ -69,7 +72,7 @@ export default function ContentPartition() {
         try {
             const data = await getContentFile(file.Path);
             if (!data || typeof data !== 'object') {
-                console.error("Datos del archivo no válidos:", data);
+                activateToast("error", "Error al obtener el contenido del archivo", "El contenido del archivo no es válido.");
                 return;
             }
             const dataP = data as FileSystemItemType;
@@ -85,7 +88,8 @@ export default function ContentPartition() {
             setViewingFile(fileWithContent);
             setIsFileViewMaximized(false);
         } catch (error) {
-            console.error("Error al obtener contenido del archivo:", error);
+            const err = error as Error;
+            activateToast("error", "Error al obtener el contenido del archivo", err.message || "Error desconocido");
         }
     };
 

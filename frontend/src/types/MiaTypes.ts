@@ -16,7 +16,6 @@ export interface MiaContextType {
   systemState: boolean;
   isAuthenticated: boolean;
   userData: UserData | null;
-  executeCommand: (command: string) => Promise<string>;
   login: ({ partition_id, username, password }: LoginParams) => Promise<boolean>;
   logout: () => Promise<void>;
   activateToast: (

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func Fn_Rep(params string) {
+func Fn_Rep(params string) (string, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-name": {Required: true},
 		"-path": {Required: true},
@@ -20,7 +20,7 @@ func Fn_Rep(params string) {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return
+		return "", err
 	}
 	name := strings.ToLower(parsed["-name"])
 	path := parsed["-path"]
@@ -36,96 +36,118 @@ func Fn_Rep(params string) {
 	}
 	if !validReport {
 		utils.ShowMessage("Reporte inválido.", true)
-		return
+		return "", fmt.Errorf("reporte inválido: %s", name)
 	}
 
-	rep(name, path, id, ruta)
+	return rep(name, path, id, ruta)
 }
 
 // rep -path=<ruta> -name=<nombre> -id=<id> [-ruta=<ruta>]
-func rep(name, path, id, ruta string) {
+func rep(name, path, id, ruta string) (string, error) {
 	switch name {
 	case "mbr":
 		err := reporteMBR(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte MBR: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte mbr ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [MBR] ha sido generado exitosamente en: "+path)
+			return "El reporte [MBR] ha sido generado exitosamente en: " + path, nil
 		}
 	case "disk":
 		err := reporteDISK(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte de disco: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte de disco ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [DISK] ha sido generado exitosamente en: "+path)
+			return "El reporte [DISK] ha sido generado exitosamente en: " + path, nil
 		}
 	case "inode":
 		err := reporteINODE(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte de inodo: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte de inodo ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [INODE] ha sido generado exitosamente en: "+path)
+			return "El reporte [INODE] ha sido generado exitosamente en: " + path, nil
 		}
 	case "block":
 		err := reporteBLOCK(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte de bloque: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte de bloque ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [BLOCK] ha sido generado exitosamente en: "+path)
+			return "El reporte [BLOCK] ha sido generado exitosamente en: " + path, nil
 		}
 	case "bm_inode":
 		err := reporteBM_INODE(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte bm_inode: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte bm_inode ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [BM_INODE] ha sido generado exitosamente en: "+path)
+			return "El reporte [BM_INODE] ha sido generado exitosamente en: " + path, nil
 		}
 	case "bm_block":
 		err := reporteBM_BLOCK(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte bm_block: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte bm_block ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [BM_BLOCK] ha sido generado exitosamente en: "+path)
+			return "El reporte [BM_BLOCK] ha sido generado exitosamente en: " + path, nil
 		}
 	case "tree":
 		err := reporteTREE(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte tree: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte tree ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [TREE] ha sido generado exitosamente en: "+path)
+			return "El reporte [TREE] ha sido generado exitosamente en: " + path, nil
 		}
 	case "sb":
 		err := reporteSB(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte sb: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte sb ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [SB] ha sido generado exitosamente en: "+path)
+			return "El reporte [SB] ha sido generado exitosamente en: " + path, nil
 		}
 	case "file":
 		err := reporteFILE(path, id, ruta)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte file: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte file ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [FILE] ha sido generado exitosamente en: "+path)
+			return "El reporte [FILE] ha sido generado exitosamente en: " + path, nil
 		}
 
 	case "ls":
 		err := reporteLS(path, id, ruta)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte ls: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte ls ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [LS] ha sido generado exitosamente en: "+path)
+			return "El reporte [LS] ha sido generado exitosamente en: " + path, nil
 		}
 	case "journaling":
 		err := reporteJOURNALING(path, id)
 		if err != nil {
 			utils.ShowMessageCustom("Error REP", "No se pudo generar el reporte journaling: "+err.Error())
+			return "", err
 		} else {
-			utils.ShowMessageCustom("Reporte generado", "El reporte journaling ha sido generado exitosamente en: "+path)
+			utils.ShowMessageCustom("Reporte generado", "El reporte [JOURNALING] ha sido generado exitosamente en: "+path)
+			return "El reporte [JOURNALING] ha sido generado exitosamente en: " + path, nil
 		}
 	default:
 		utils.ShowMessageCustom("Error REP", "Reporte no implementado: "+name)
-		return
+		return "", fmt.Errorf("reporte no implementado: %s", name)
 	}
 }
 

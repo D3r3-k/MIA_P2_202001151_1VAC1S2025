@@ -87,31 +87,6 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     // Handlers
-    const executeCommand = async (command: string) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/execute`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ command }),
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || "Error al ejecutar el comando.");
-            }
-            const data = await response.json();
-            return data.output;
-        } catch (error) {
-            const err = error as Error;
-            activateToast("error", "Error al ejecutar el comando.", err.message || "Error desconocido.");
-            return "Error al ejecutar el comando.";
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const login = async ({
         partition_id,
         username,
@@ -209,7 +184,6 @@ export const MiaProvider = ({ children }: { children: React.ReactNode }) => {
                 systemState,
                 isAuthenticated,
                 userData,
-                executeCommand,
                 login,
                 logout,
                 activateToast,

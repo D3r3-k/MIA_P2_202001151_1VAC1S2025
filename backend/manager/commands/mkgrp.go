@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-func Fn_Mkgrp(params string) {
+func Fn_Mkgrp(params string) (string, error) {
 	if globals.LoginSession.User == "" {
 		utils.ShowMessage("Debe iniciar sesión primero.", true)
-		return
+		return "", fmt.Errorf("debe iniciar sesión primero")
 	}
 	paramDefs := map[string]Structs.ParamDef{
 		"-name": {Required: true},
@@ -21,50 +21,50 @@ func Fn_Mkgrp(params string) {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return
+		return "", err
 	}
 	name := parsed["-name"]
 	if len(name) > 10 {
 		utils.ShowMessage("El nombre del grupo no puede exceder los 10 caracteres.", true)
-		return
+		return "", fmt.Errorf("el nombre del grupo no puede exceder los 10 caracteres")
 	}
 	if globals.LoginSession.User != "root" {
 		utils.ShowMessage("Solo el usuario root puede crear grupos.", true)
-		return
+		return "", fmt.Errorf("solo el usuario root puede crear grupos")
 	}
 	part := utils.GetPartitionById(string(globals.LoginSession.PartitionID[:]))
 	if part == nil {
 		utils.ShowMessage("La partición de la sesión no está montada.", true)
-		return
+		return "", fmt.Errorf("la partición de la sesión no está montada")
 	}
-	Mkgrp(name, part)
+	return Mkgrp(name, part)
 }
 
-func Mkgrp(name string, part *Structs.Partition) {
+func Mkgrp(name string, part *Structs.Partition) (string, error) {
 	part = utils.GetPartitionById(string(part.Id[:]))
 	if part == nil {
 		utils.ShowMessage("La partición no está montada.", true)
-		return
+		return "", fmt.Errorf("la partición no está montada")
 	}
 	drive := strings.ToUpper(string(part.Id[0]))
 	path := globals.PathDisks + drive + ".dsk"
 	file, err := utils.OpenFile(path)
 	if err != nil {
 		utils.ShowMessage("No se pudo abrir el disco: "+path, true)
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco: %s", path)
 	}
 	defer file.Close()
 
 	var sb Structs.Superblock
 	if err := utils.ReadObject(file, &sb, int64(part.Start)); err != nil {
 		utils.ShowMessage("No se pudo leer el superbloque.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el superbloque: %v", err)
 	}
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 	var inodeUser Structs.Inode
 	if err := utils.ReadObject(file, &inodeUser, int64(sb.S_inode_start+inodoSize*1)); err != nil {
 		utils.ShowMessage("No se pudo leer el inodo de users.txt.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el inodo de users.txt: %v", err)
 	}
 
 	// Leer contenido actual
@@ -79,7 +79,7 @@ func Mkgrp(name string, part *Structs.Partition) {
 		offset := int64(sb.S_block_start + blockSize*blockNum)
 		if err := utils.ReadObject(file, &blk, offset); err != nil {
 			utils.ShowMessage("No se pudo leer el bloque "+fmt.Sprint(blockNum)+" de users.txt.", true)
-			return
+			return "", fmt.Errorf("no se pudo leer el bloque %d de users.txt: %v", blockNum, err)
 		}
 		fullContent += string(blk.B_content[:])
 	}
@@ -90,7 +90,7 @@ func Mkgrp(name string, part *Structs.Partition) {
 		parts := strings.Split(line, ",")
 		if len(parts) >= 3 && parts[1] == "G" && parts[2] == name && parts[0] != "0" {
 			utils.ShowMessage("El grupo '"+name+"' ya existe.", true)
-			return
+			return "", fmt.Errorf("el grupo '%s' ya existe", name)
 		}
 	}
 
@@ -112,10 +112,11 @@ func Mkgrp(name string, part *Structs.Partition) {
 	err = utils.AppendToFileBlocks(file, &sb, &inodeUser, []byte(newLine))
 	if err != nil {
 		utils.ShowMessage("Error al agregar grupo: "+err.Error(), true)
-		return
+		return "", err
 	}
 
 	// Actualizar inodo users.txt
 	utils.WriteObject(file, inodeUser, int64(sb.S_inode_start+inodoSize*1))
 	utils.ShowMessage("Grupo '"+name+"' creado exitosamente.", false)
+	return "Grupo '" + name + "' creado exitosamente.", nil
 }

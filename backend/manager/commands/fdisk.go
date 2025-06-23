@@ -4,13 +4,12 @@ import (
 	globals "MIA_PI_202001151_1VAC1S2025/manager/global"
 	Structs "MIA_PI_202001151_1VAC1S2025/manager/structs"
 	"MIA_PI_202001151_1VAC1S2025/manager/utils"
-	"bufio"
+	"errors"
 	"fmt"
-	"os"
 	"strings"
 )
 
-func Fn_Fdisk(params string) {
+func Fn_Fdisk(params string) (string, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-size":        {Required: false},
 		"-driveletter": {Required: true},
@@ -21,44 +20,44 @@ func Fn_Fdisk(params string) {
 		"-delete":      {Required: false, Default: ""},
 		"-add":         {Required: false, Default: ""},
 	}
+
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return "", err
 	}
-	var size int
+
 	driveLetter := strings.ToUpper(parsed["-driveletter"])
 	name := strings.TrimSpace(parsed["-name"])
 	unit := strings.ToLower(parsed["-unit"])
 	type_ := strings.ToLower(parsed["-type"])
 	fit := strings.ToLower(parsed["-fit"])
+
 	if parsed["-delete"] != "" {
-		FdiskDelete(parsed["-delete"], driveLetter, name)
-		return
+		return FdiskDelete(parsed["-delete"], driveLetter, name)
 	}
+
 	if parsed["-add"] != "" {
 		var add int
 		if _, err := fmt.Sscanf(parsed["-add"], "%d", &add); err != nil {
-			utils.ShowMessage("El valor de -add debe ser numérico.", true)
-			return
+			return "", errors.New("el valor de -add debe ser numérico")
 		}
-		FdiskAdd(add, unit, driveLetter, name)
-		return
+		return FdiskAdd(add, unit, driveLetter, name)
 	}
-	if parsed["-size"] == "" {
-		utils.ShowMessage("El parámetro -size es obligatorio.", true)
-		return
-	}
-	if _, err := fmt.Sscanf(parsed["-size"], "%d", &size); err != nil {
-		utils.ShowMessage("El valor de -size debe ser numérico.", true)
-		return
-	}
-	Fdisk(size, driveLetter, name, type_, fit, unit)
 
+	if parsed["-size"] == "" {
+		return "", errors.New("el parámetro -size es obligatorio")
+	}
+
+	var size int
+	if _, err := fmt.Sscanf(parsed["-size"], "%d", &size); err != nil {
+		return "", errors.New("el valor de -size debe ser numérico")
+	}
+
+	return Fdisk(size, driveLetter, name, type_, fit, unit)
 }
 
 // Fdisk -size=<size> -driveletter=<driveLetter> -name=<name> -type=<p|e> -fit=<b|f|w> -unit=<k|m>
-func Fdisk(size int, driveLetter string, name string, type_ string, fit string, unit string) {
+func Fdisk(size int, driveLetter, name, type_, fit, unit string) (string, error) {
 	validaciones := map[string]struct {
 		ok  bool
 		msg string
@@ -70,38 +69,36 @@ func Fdisk(size int, driveLetter string, name string, type_ string, fit string, 
 		"fit":         {fit == "bf" || fit == "ff" || fit == "wf", "El ajuste debe ser 'bf', 'ff' o 'wf'."},
 		"unit":        {unit == "b" || unit == "k" || unit == "m", "La unidad debe ser 'b', 'k' o 'm'."},
 	}
+
 	for _, valid := range validaciones {
 		if !valid.ok {
-			utils.ShowMessage(valid.msg, true)
-			return
+			return "", errors.New(valid.msg)
 		}
 	}
-	size = utils.GetRealSize(size, unit)
 
+	size = utils.GetRealSize(size, unit)
 	file, err := utils.OpenFile(globals.PathDisks + driveLetter + ".dsk")
 	if err != nil {
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco [%s]: %v", driveLetter, err)
 	}
 	defer file.Close()
 
-	var tempMBR Structs.MBR
-	if err := utils.ReadObject(file, &tempMBR, 0); err != nil {
-		return
+	var mbr Structs.MBR
+	if err := utils.ReadObject(file, &mbr, 0); err != nil {
+		return "", err
 	}
+
 	for i := 0; i < 4; i++ {
-		existingName := strings.TrimRight(string(tempMBR.Partitions[i].Name[:]), "\x00")
-		if tempMBR.Partitions[i].Size != 0 && existingName == name {
-			utils.ShowMessage(fmt.Sprintf("Ya existe una partición con el nombre [%s] en el disco [%s].", name, driveLetter), true)
-			return
+		existing := strings.TrimRight(string(mbr.Partitions[i].Name[:]), "\x00")
+		if mbr.Partitions[i].Size != 0 && existing == name {
+			return "", fmt.Errorf("ya existe una partición con el nombre [%s] en el disco [%s]", name, driveLetter)
 		}
-		if tempMBR.Partitions[i].Type[0] == 'e' {
-			utils.ShowMessage(fmt.Sprintf("No se puede crear una partición extendida [%s] en el disco [%s].\nYa existe una partición extendida.", name, driveLetter), true)
-			return
+		if mbr.Partitions[i].Type[0] == 'e' && type_ == "e" {
+			return "", fmt.Errorf("ya existe una partición extendida en el disco [%s]", driveLetter)
 		}
 	}
 
-	freeSpaces := utils.GetFreeSpaces(&tempMBR, tempMBR.MbrSize)
-
+	freeSpaces := utils.GetFreeSpaces(&mbr, mbr.MbrSize)
 	type spaceIdx struct {
 		idx   int
 		start int32
@@ -109,52 +106,44 @@ func Fdisk(size int, driveLetter string, name string, type_ string, fit string, 
 	}
 	var candidates []spaceIdx
 
-	for idx := 0; idx < 4; idx++ {
-		if tempMBR.Partitions[idx].Size == 0 {
+	for i := 0; i < 4; i++ {
+		if mbr.Partitions[i].Size == 0 {
 			for _, sp := range freeSpaces {
 				if int32(size) <= sp[1] {
-					candidates = append(candidates, spaceIdx{idx, sp[0], sp[1]})
+					candidates = append(candidates, spaceIdx{i, sp[0], sp[1]})
 				}
 			}
 		}
 	}
 
 	if len(candidates) == 0 {
-		utils.ShowMessage(fmt.Sprintf("No hay espacio para la partición [%s].\nEspacio del disco [%s]: %d%s.", name, driveLetter, size, unit), true)
-		return
+		return "", fmt.Errorf("no hay espacio para la partición [%s] en el disco [%s]", name, driveLetter)
 	}
 
-	_fitMbr := strings.ToLower(string(tempMBR.Fit[:]))
+	_fit := strings.ToLower(string(mbr.Fit[:]))
 	var selected spaceIdx
-	switch _fitMbr {
+	switch _fit {
 	case "f":
-		// First fit: primer espacio donde quepa
 		selected = candidates[0]
 	case "b":
-		// Best fit: espacio más pequeño posible
-		best := candidates[0]
+		selected = candidates[0]
 		for _, c := range candidates {
-			if c.size < best.size {
-				best = c
+			if c.size < selected.size {
+				selected = c
 			}
 		}
-		selected = best
 	case "w":
-		// Worst fit: espacio más grande posible
-		worst := candidates[0]
+		selected = candidates[0]
 		for _, c := range candidates {
-			if c.size > worst.size {
-				worst = c
+			if c.size > selected.size {
+				selected = c
 			}
 		}
-		selected = worst
 	default:
-		utils.ShowMessage(fmt.Sprintf("Ajuste [%s] no reconocido. Debe ser <ff|bf|wf>.\n", _fitMbr), true)
-		return
+		return "", fmt.Errorf("ajuste [%s] no reconocido. Debe ser <ff|bf|wf>", _fit)
 	}
 
-	// Asignar partición
-	p := &tempMBR.Partitions[selected.idx]
+	p := &mbr.Partitions[selected.idx]
 	p.Size = int32(size)
 	copy(p.Name[:], name)
 	copy(p.Fit[:], fit)
@@ -162,143 +151,139 @@ func Fdisk(size int, driveLetter string, name string, type_ string, fit string, 
 	copy(p.Type[:], type_)
 	p.Start = selected.start
 
-	// Guardar cambios
-	if err := utils.WriteObject(file, &tempMBR, 0); err != nil {
-		return
+	if err := utils.WriteObject(file, &mbr, 0); err != nil {
+		return "", err
 	}
 
-	if type_ == "e" {
-		type_ = "Extendida"
-	} else if type_ == "p" {
-		type_ = "Primaria"
-	}
-	if unit == "b" {
-		unit = " bytes"
-	} else if unit == "k" {
-		unit = " Kb"
-	} else if unit == "m" {
-		unit = " Mb"
-	}
-
-	Structs.PrintMBR(tempMBR, driveLetter)
-	utils.ShowMessage(fmt.Sprintf("Partición [%s] - tipo [%s].\nCreada exitosamente en el disco [%s] %d%s.", name, type_, driveLetter, size, unit), false)
+	unitLabel := map[string]string{"b": "bytes", "k": "KB", "m": "MB"}[unit]
+	Structs.PrintMBR(mbr, driveLetter)
+	return fmt.Sprintf("Partición [%s] de tipo [%s] creada en disco [%s] con tamaño %d%s", name, type_, driveLetter, size, unitLabel), nil
 }
 
 // Fdisk -add=<add> -unit=<unit> -driveletter=<driveLetter> -name=<name>
-func FdiskAdd(add int, unit string, driveLetter string, name string) {
+func FdiskAdd(add int, unit, driveLetter, name string) (string, error) {
 	if unit != "b" && unit != "k" && unit != "m" {
-		utils.ShowMessage("La unidad debe ser <b|k|m>.", true)
-		return
+		return "", errors.New("la unidad debe ser <b|k|m>")
 	}
-	// Convertir tamaño a bytes
-	size := utils.GetRealSize(add, unit)
 
+	size := utils.GetRealSize(add, unit)
 	path := globals.PathDisks + driveLetter + ".dsk"
+
 	file, err := utils.OpenFile(path)
 	if err != nil {
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco [%s]: %v", driveLetter, err)
 	}
 	defer file.Close()
 
-	var tempMBR Structs.MBR
-	if err := utils.ReadObject(file, &tempMBR, 0); err != nil {
-		return
+	var mbr Structs.MBR
+	if err := utils.ReadObject(file, &mbr, 0); err != nil {
+		return "", err
 	}
 
 	found := false
+	var sizeBefore, sizeAfter int32
+
 	for i := 0; i < 4; i++ {
-		part := &tempMBR.Partitions[i]
+		part := &mbr.Partitions[i]
 		existingName := strings.TrimRight(string(part.Name[:]), "\x00")
+
 		if part.Size > 0 && existingName == name {
 			found = true
+			sizeBefore = part.Size
+
 			if add > 0 {
 				end := part.Start + part.Size
 				newEnd := end + int32(size)
+
 				for j := 0; j < 4; j++ {
-					if i == j || tempMBR.Partitions[j].Size == 0 {
+					if i == j || mbr.Partitions[j].Size == 0 {
 						continue
 					}
-					startJ := tempMBR.Partitions[j].Start
+					startJ := mbr.Partitions[j].Start
 					if startJ > end && startJ < newEnd {
-						utils.ShowMessage(fmt.Sprintf("No se puede expandir: colisión con partición [%s].", strings.TrimRight(string(tempMBR.Partitions[j].Name[:]), "\x00")), true)
-						return
+						conflict := strings.TrimRight(string(mbr.Partitions[j].Name[:]), "\x00")
+						return "", fmt.Errorf("no se puede expandir: colisión con partición [%s]", conflict)
 					}
 				}
-				if newEnd > tempMBR.MbrSize {
-					utils.ShowMessage(fmt.Sprintf("No se puede expandir: se excede el tamaño del disco [%s].", driveLetter), true)
-					return
+
+				if newEnd > mbr.MbrSize {
+					return "", fmt.Errorf("no se puede expandir: se excede el tamaño del disco [%s]", driveLetter)
 				}
+
 				part.Size += int32(size)
 
 			} else if add < 0 {
 				if int32(-size) > part.Size {
-					utils.ShowMessage(fmt.Sprintf("No se puede reducir la partición [%s] más allá de su tamaño actual.", existingName), true)
-					return
+					return "", fmt.Errorf("no se puede reducir la partición [%s] más allá de su tamaño actual", existingName)
 				}
+
 				oldEnd := part.Start + part.Size
-				newEnd := oldEnd + int32(size)
+				newEnd := oldEnd + int32(size) // size negativo
 				zeroBuf := make([]byte, -size)
-				file.WriteAt(zeroBuf, int64(newEnd))
+				if _, err := file.WriteAt(zeroBuf, int64(newEnd)); err != nil {
+					return "", fmt.Errorf("error al limpiar espacio al reducir partición: %v", err)
+				}
 				part.Size += int32(size)
 			}
+
+			sizeAfter = part.Size
 			break
 		}
 	}
+
 	if !found {
-		utils.ShowMessage(fmt.Sprintf("No se encontró una partición con el nombre [%s] en el disco [%s].", name, driveLetter), true)
-		return
-	}
-	if err := utils.WriteObject(file, &tempMBR, 0); err != nil {
-		return
+		return "", fmt.Errorf("no se encontró una partición con el nombre [%s] en el disco [%s]", name, driveLetter)
 	}
 
-	Structs.PrintMBR(tempMBR, driveLetter)
-	utils.ShowMessage(fmt.Sprintf("Partición [%s] actualizada exitosamente en el disco [%s].", name, driveLetter), false)
+	if err := utils.WriteObject(file, &mbr, 0); err != nil {
+		return "", fmt.Errorf("no se pudo escribir en el disco: %v", err)
+	}
+
+	Structs.PrintMBR(mbr, driveLetter)
+
+	msg := fmt.Sprintf(
+		"Partición [%s] del disco [%s] modificada: tamaño anterior = %d bytes, nuevo tamaño = %d bytes",
+		name, driveLetter, sizeBefore, sizeAfter,
+	)
+	return msg, nil
 }
 
 // Fdisk -delete=full -<driveLetter>=<driveLetter> -name=<name>
-func FdiskDelete(delete string, driveLetter string, name string) {
+func FdiskDelete(delete string, driveLetter string, name string) (string, error) {
 	if delete != "full" {
-		utils.ShowMessage("Error en el parametro: fdisk -<delete=full>.", true)
-		return
+		return "", errors.New("el parámetro -delete debe ser 'full'")
 	}
-	file, err := utils.OpenFile(globals.PathDisks + driveLetter + ".dsk")
+
+	path := globals.PathDisks + driveLetter + ".dsk"
+	file, err := utils.OpenFile(path)
 	if err != nil {
-		utils.ShowMessage(fmt.Sprintf("No se pudo abrir el disco [%s]: %v", driveLetter, err), true)
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco [%s]: %v", driveLetter, err)
 	}
 	defer file.Close()
 
-	utils.ShowMessage("Desea eliminar el disco "+driveLetter+"?\nS: para reemplazar\nN: para cancelar", true)
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print(">>> ")
-	scanner.Scan()
-	response := strings.TrimSpace(scanner.Text())
-	if strings.ToUpper(response) != "S" {
-		utils.ShowMessage("Operación cancelada por el usuario.", false)
-		return
+	var mbr Structs.MBR
+	if err := utils.ReadObject(file, &mbr, 0); err != nil {
+		return "", err
 	}
 
-	var tempMBR Structs.MBR
-	if err := utils.ReadObject(file, &tempMBR, 0); err != nil {
-		return
-	}
 	found := false
 	for i := 0; i < 4; i++ {
-		existingName := strings.TrimRight(string(tempMBR.Partitions[i].Name[:]), "\x00")
-		if tempMBR.Partitions[i].Size != 0 && existingName == name {
-			tempMBR.Partitions[i] = Structs.Partition{}
+		existingName := strings.TrimRight(string(mbr.Partitions[i].Name[:]), "\x00")
+		if mbr.Partitions[i].Size != 0 && existingName == name {
+			mbr.Partitions[i] = Structs.Partition{}
 			found = true
 			break
 		}
 	}
 	if !found {
-		utils.ShowMessage(fmt.Sprintf("No se encontró una partición con el nombre [%s] en el disco [%s].", name, driveLetter), true)
-		return
+		return "", fmt.Errorf("no se encontró una partición con el nombre [%s] en el disco [%s]", name, driveLetter)
 	}
-	if err := utils.WriteObject(file, &tempMBR, 0); err != nil {
-		return
+
+	if err := utils.WriteObject(file, &mbr, 0); err != nil {
+		return "", fmt.Errorf("no se pudo guardar el MBR actualizado en el disco [%s]: %v", driveLetter, err)
 	}
-	Structs.PrintMBR(tempMBR, driveLetter)
-	utils.ShowMessage(fmt.Sprintf("Partición [%s] eliminada exitosamente del disco [%s].", name, driveLetter), false)
+
+	Structs.PrintMBR(mbr, driveLetter)
+
+	return fmt.Sprintf("Partición [%s] eliminada exitosamente del disco [%s]", name, driveLetter), nil
 }

@@ -10,30 +10,63 @@ import {
 import { useMia } from "./useMia";
 
 const useFetchs = () => {
-  const { activateToast } = useMia();
+  const { activateToast, setLoading } = useMia();
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const fetchJson = async <T>(
     url: string,
     options?: RequestInit,
     defaultValue?: T,
-    errorMessage?: string
+    fallbackMessage?: string
   ): Promise<T> => {
     try {
+      setLoading(true);
       const response = await fetch(url, options);
-      if (!response.ok)
-        throw new Error(errorMessage || "Error en la solicitud");
       const data = await response.json();
+
+      if (!response.ok) {
+        const backendError =
+          data?.error || fallbackMessage || response.statusText;
+        activateToast("error", "Error en la solicitud", backendError);
+        return data as T;
+      }
+
       return data as T;
     } catch (error) {
       const err = error as Error;
       activateToast(
         "error",
         "Error en la solicitud",
-        errorMessage || err.message
+        err.message || fallbackMessage || "Ocurrió un error inesperado"
       );
       return defaultValue as T;
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // [Execute]
+  const executeCommand = async (commands: string): Promise<string> => {
+    const body = JSON.stringify({ commands });
+
+    const response = await fetchJson<{
+      response: string;
+      status: string;
+      error?: string;
+    }>(
+      `${baseUrl}/api/execute`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
+      },
+      { response: "", status: "" },
+      `No se pudo ejecutar el/los comando(s) "${commands}".`
+    );
+
+    return response.response;
   };
 
   // [Drives]
@@ -115,6 +148,7 @@ const useFetchs = () => {
     );
 
   return {
+    executeCommand,
     getDrives,
     getDriveStats: getDrivesStats,
     getDriveInfo,

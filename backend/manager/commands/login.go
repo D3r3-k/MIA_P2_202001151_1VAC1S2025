@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func Fn_Login(params string) bool {
+func Fn_Login(params string) (bool, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-user": {Required: true},
 		"-pass": {Required: true},
@@ -18,23 +18,23 @@ func Fn_Login(params string) bool {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return false
+		return false, err
 	}
 	user := parsed["-user"]
 	pass := parsed["-pass"]
 	id := parsed["-id"]
 	part := utils.GetPartitionById(id)
 	if part == nil {
-		return false
+		return false, fmt.Errorf("partición no encontrada: %s", id)
 	}
 	return Login(user, pass, part)
 }
 
 // login -user=<username> -pass=<password> -id=<partition_id>
-func Login(user string, pass string, part *Structs.Partition) bool {
+func Login(user string, pass string, part *Structs.Partition) (bool, error) {
 	if globals.LoginSession.User != "" {
 		utils.ShowMessage("Ya hay una sesión iniciada con el usuario: "+globals.LoginSession.User, true)
-		return false
+		return false, fmt.Errorf("ya hay una sesión iniciada con el usuario: %s", globals.LoginSession.User)
 	}
 
 	drive := strings.ToUpper(string(part.Id[0]))
@@ -42,7 +42,7 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 	file, err := utils.OpenFile(path)
 	if err != nil {
 		utils.ShowMessage("No se pudo abrir el disco: "+path, true)
-		return false
+		return false, fmt.Errorf("no se pudo abrir el disco: %s", path)
 	}
 	defer file.Close()
 
@@ -50,14 +50,14 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 	var sb Structs.Superblock
 	if err := utils.ReadObject(file, &sb, int64(part.Start)); err != nil {
 		utils.ShowMessage("No se pudo leer el superbloque.", true)
-		return false
+		return false, fmt.Errorf("no se pudo leer el superbloque: %v", err)
 	}
 	// Leer inodo 1 (users.txt)
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 	var inodeUser Structs.Inode
 	if err := utils.ReadObject(file, &inodeUser, int64(sb.S_inode_start+inodoSize*1)); err != nil {
 		utils.ShowMessage("No se pudo leer el inodo de users.txt.", true)
-		return false
+		return false, fmt.Errorf("no se pudo leer el inodo de users.txt: %v", err)
 	}
 	// Leer TODOS los bloques directos usados
 	blockSize := int32(binary.Size(Structs.Fileblock{}))
@@ -71,7 +71,7 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 		offset := int64(sb.S_block_start + blockSize*int32(blockNum))
 		if err := utils.ReadObject(file, &blk, offset); err != nil {
 			utils.ShowMessage("No se pudo leer el bloque "+fmt.Sprint(blockNum)+" de users.txt.", true)
-			return false
+			return false, fmt.Errorf("no se pudo leer el bloque %d de users.txt: %v", blockNum, err)
 		}
 		fullContent += string(blk.B_content[:])
 	}
@@ -87,7 +87,7 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 			uid, err = utils.StringToInt32(strings.Trim(parts[0], "\x00"))
 			if err != nil {
 				utils.ShowMessage("Error al convertir UID: "+err.Error(), true)
-				return false
+				return false, err
 			}
 			groupUser = strings.Trim(parts[2], "\x00")
 			break
@@ -95,7 +95,7 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 	}
 	if !found {
 		utils.ShowMessage("Usuario o contraseña incorrecta.", true)
-		return false
+		return false, fmt.Errorf("usuario o contraseña incorrecta")
 	}
 	for _, line := range lines {
 		parts := strings.Split(line, ",")
@@ -103,14 +103,14 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 			gid, err = utils.StringToInt32(strings.Trim(parts[0], "\x00"))
 			if err != nil {
 				utils.ShowMessage("Error al convertir GID: "+err.Error(), true)
-				return false
+				return false, err
 			}
 			break
 		}
 	}
 	if gid == 0 {
 		utils.ShowMessage("No se encontró el grupo del usuario: "+groupUser, true)
-		return false
+		return false, fmt.Errorf("no se encontró el grupo del usuario: %s", groupUser)
 	}
 
 	// Guardar sesión
@@ -122,5 +122,5 @@ func Login(user string, pass string, part *Structs.Partition) bool {
 		PartitionID: part.Id,
 	}
 	utils.ShowMessage("Sesión iniciada correctamente.", false)
-	return true
+	return true, nil
 }

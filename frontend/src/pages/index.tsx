@@ -1,14 +1,14 @@
-import { useMia } from "@/hooks/useMia";
 import { useState } from "react";
 import { FileText, FolderOpen, Save, Terminal, Trash2, Play } from "lucide-react";
 import CodeEditor from "@/components/CodeEditor/CodeEditor";
 import Head from "next/head";
+import useFetchs from "@/hooks/useFetchs";
 
 
 
 export default function Home() {
   // Hooks
-  const { executeCommand } = useMia();
+  const { executeCommand } = useFetchs();
   // States
   const [consoleInput, setConsoleInput] = useState<string>("");
   const [response, setResponse] = useState<string>("");

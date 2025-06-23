@@ -4,7 +4,6 @@ import (
 	globals "MIA_PI_202001151_1VAC1S2025/manager/global"
 	Structs "MIA_PI_202001151_1VAC1S2025/manager/structs"
 	"MIA_PI_202001151_1VAC1S2025/manager/utils"
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -13,10 +12,10 @@ import (
 	"strings"
 )
 
-func Fn_Mkfile(params string) {
+func Fn_Mkfile(params string) (string, error) {
 	if globals.LoginSession.User == "" {
 		utils.ShowMessage("Debe iniciar sesión primero.", true)
-		return
+		return "", fmt.Errorf("debe iniciar sesión primero")
 	}
 	paramDefs := map[string]Structs.ParamDef{
 		"-path": {Required: true},
@@ -27,7 +26,7 @@ func Fn_Mkfile(params string) {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return
+		return "", err
 	}
 	path := parsed["-path"]
 	r := bool(parsed["-r"] == "true")
@@ -35,38 +34,38 @@ func Fn_Mkfile(params string) {
 	cont := parsed["-cont"]
 	if path[0] != '/' {
 		utils.ShowMessage("La ruta debe comenzar desde la raiz [/].", true)
-		return
+		return "", fmt.Errorf("la ruta debe comenzar desde la raiz [/]")
 	}
 	part := utils.GetPartitionById(string(globals.LoginSession.PartitionID[:]))
 	if part == nil {
 		utils.ShowMessage("La partición de la sesión no está montada.", true)
-		return
+		return "", fmt.Errorf("la partición de la sesión no está montada")
 	}
 
-	mkfile(path, sizeStr, cont, r, *part)
+	return mkfile(path, sizeStr, cont, r, *part)
 }
 
 // mkfile -path=<ruta> [-r] -size=<tamaño> -cont=<contenido>
-func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Partition) {
+func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Partition) (string, error) {
 	folders := strings.Split(path, "/")
 	lastPart := folders[len(folders)-1]
 	if lastPart == "" {
 		utils.ShowMessage("La ruta termina en '/', se esperaba un archivo, no una carpeta.", true)
-		return
+		return "", fmt.Errorf("la ruta termina en '/', se esperaba un archivo, no una carpeta")
 	}
 	if !strings.Contains(lastPart, ".") {
 		utils.ShowMessage("Debe especificar un archivo con formato (ejemplo: nombre.txt).", true)
-		return
+		return "", fmt.Errorf("debe especificar un archivo con formato (ejemplo: nombre.txt)")
 	}
 	fileName := lastPart
 	if len(fileName) > 12 {
 		utils.ShowMessage("El nombre del archivo (incluyendo su extensión) debe tener como máximo 12 caracteres: "+fileName, true)
-		return
+		return "", fmt.Errorf("el nombre del archivo (incluyendo su extensión) debe tener como máximo 12 caracteres: %s", fileName)
 	}
 	re := regexp.MustCompile(`^[a-zA-Z0-9_ .]+$`)
 	if !re.MatchString(fileName) {
 		utils.ShowMessage("Los nombres de los archivos deben tener solo caracteres alfanuméricos, guion bajo, espacio o punto: "+fileName, true)
-		return
+		return "", fmt.Errorf("los nombres de los archivos deben tener solo caracteres alfanuméricos, guion bajo, espacio o punto: %s", fileName)
 	}
 
 	folders = folders[:len(folders)-1]
@@ -76,14 +75,14 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 	file, err := utils.OpenFile(diskPath)
 	if err != nil {
 		utils.ShowMessage("No se pudo abrir el disco: "+diskPath, true)
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco: %s", diskPath)
 	}
 	defer file.Close()
 
 	var sb Structs.Superblock
 	if err := utils.ReadObject(file, &sb, int64(part.Start)); err != nil {
 		utils.ShowMessage("No se pudo leer el superbloque.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el superbloque: %v", err)
 	}
 
 	currentInode := int32(0)
@@ -99,12 +98,12 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 				newInode, err := utils.CreateDirectory(file, &sb, currentInode, dir, part)
 				if err != nil {
 					utils.ShowMessage("Error al crear carpeta ["+dir+"]: "+err.Error(), true)
-					return
+					return "", err
 				}
 				currentInode = newInode
 			} else {
 				utils.ShowMessage("La carpeta ["+dir+"] no existe. Use -r para crearla.", true)
-				return
+				return "", fmt.Errorf("la carpeta [%s] no existe, use -r para crearla", dir)
 			}
 		}
 	}
@@ -116,20 +115,11 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 
 	if exists {
-		utils.ShowMessage("El archivo ["+fileName+"] ya existe. Desea reemplazarlo?\nS: para reemplazar\nN: para cancelar", true)
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print(">>> ")
-		scanner.Scan()
-		response := strings.TrimSpace(scanner.Text())
-		if strings.ToUpper(response) != "S" {
-			utils.ShowMessage("Operación cancelada por el usuario.", false)
-			return
-		}
 		inodeNum = oldInodeNum
 		utils.FreeFileBlocks(file, &sb, oldInodeNum)
 		if err := utils.ReadObject(file, &inode, int64(sb.S_inode_start+inodeNum*inodoSize)); err != nil {
 			utils.ShowMessage("No se pudo leer el inodo viejo: "+err.Error(), true)
-			return
+			return "", fmt.Errorf("no se pudo leer el inodo viejo: %v", err)
 		}
 		for i := 0; i < 15; i++ {
 			inode.I_block[i] = -1
@@ -139,7 +129,7 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 		tmp := utils.GetFreeInode(file, sb)
 		if tmp == -1 {
 			utils.ShowMessage("No hay inodos libres.", true)
-			return
+			return "", fmt.Errorf("no hay inodos libres")
 		}
 		inodeNum = tmp
 		inode.I_uid = globals.LoginSession.UID
@@ -160,7 +150,7 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 		data, err := os.ReadFile(cont)
 		if err != nil {
 			utils.ShowMessage("No se pudo leer el archivo de contenido: "+err.Error(), true)
-			return
+			return "", err
 		}
 		content = data
 	}
@@ -168,7 +158,7 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 		sz, err := strconv.Atoi(sizeStr)
 		if err != nil || sz < 0 {
 			utils.ShowMessage("El tamaño debe ser un número entero no negativo.", true)
-			return
+			return "", fmt.Errorf("el tamaño debe ser un número entero no negativo")
 		}
 		patron := []byte("0123456789")
 		for len(content) < sz {
@@ -185,7 +175,7 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 
 	if err := utils.AppendToFileBlocks(file, &sb, &inode, content); err != nil {
 		utils.ShowMessage("Error al escribir bloques del archivo: "+err.Error(), true)
-		return
+		return "", err
 	}
 
 	offsetInode := int64(sb.S_inode_start + inodeNum*inodoSize)
@@ -196,10 +186,11 @@ func mkfile(path string, sizeStr string, cont string, r bool, part Structs.Parti
 		err = utils.AddDirectoryEntry(file, &sb, currentInode, fileName, inodeNum)
 		if err != nil {
 			utils.ShowMessage("Error al agregar entrada: "+err.Error(), true)
-			return
+			return "", err
 		}
 		sb.S_free_inodes_count--
 	}
 	utils.WriteObject(file, sb, int64(part.Start))
 	utils.ShowMessage("Archivo ["+fileName+"] creado exitosamente.", false)
+	return "Archivo [" + fileName + "] creado exitosamente.", nil
 }

@@ -2,49 +2,90 @@ package lib
 
 import (
 	"MIA_PI_202001151_1VAC1S2025/manager/commands"
-	"MIA_PI_202001151_1VAC1S2025/manager/utils"
 	"fmt"
 )
 
-func AnalyzeCommand(comando string, parametros string) {
+func AnalyzeCommand(comando string, parametros string) (string, error) {
 	switch comando {
 	case "mkdisk":
-		commands.Fn_Mkdisk(parametros)
+		output, err := commands.Fn_Mkdisk(parametros)
+		return output, err
 	case "rmdisk":
-		commands.Fn_rmdisk(parametros)
+		output, err := commands.Fn_rmdisk(parametros)
+		return output, err
 	case "fdisk":
-		commands.Fn_Fdisk(parametros)
+		output, err := commands.Fn_Fdisk(parametros)
+		return output, err
 	case "mount":
-		commands.Fn_Mount(parametros)
+		output, err := commands.Fn_Mount(parametros)
+		return output, err
 	case "unmount":
-		commands.Fn_Unmount(parametros)
+		output, err := commands.Fn_Unmount(parametros)
+		return output, err
 	case "mkfs":
-		commands.Fn_Mkfs(parametros)
+		output, err := commands.Fn_Mkfs(parametros)
+		return output, err
 	case "login":
-		commands.Fn_Login(parametros)
+		output, err := commands.Fn_Login(parametros)
+		msg := "Inicio de sesión exitoso"
+		if !output {
+			msg = "Error al iniciar sesión"
+		}
+		return msg, err
 	case "logout":
-		commands.Fn_Logout(parametros)
+		output, err := commands.Fn_Logout(parametros)
+		return output, err
 	case "mkgrp":
-		commands.Fn_Mkgrp(parametros)
+		output, err := commands.Fn_Mkgrp(parametros)
+		return output, err
 	case "rmgrp":
-		commands.Fn_Rmgrp(parametros)
+		output, err := commands.Fn_Rmgrp(parametros)
+		return output, err
 	case "mkusr":
-		commands.Fn_Mkusr(parametros)
+		output, err := commands.Fn_Mkusr(parametros)
+		return output, err
 	case "rmusr":
-		commands.Fn_Rmusr(parametros)
+		output, err := commands.Fn_Rmusr(parametros)
+		return output, err
 	case "mkfile":
-		commands.Fn_Mkfile(parametros)
+		output, err := commands.Fn_Mkfile(parametros)
+		return output, err
 	case "cat":
-		commands.Fn_Cat(parametros)
+		output, err := commands.Fn_Cat(parametros)
+		msg := ""
+		if output != nil {
+			msg = "[Cat " + output.Name + "]\n" + "\"" + output.Content + "\""
+		}
+		return msg, err
 	case "mkdir":
-		commands.Fn_Mkdir(parametros)
+		output, err := commands.Fn_Mkdir(parametros)
+		return output, err
 	case "find":
-		commands.Fn_Find(parametros)
+		output := commands.Fn_Find(parametros)
+		if output.Error != nil {
+			return "", output.Error
+		}
+		msg := "[Find " + output.Object.Name + "]\n"
+		if output.Tree != "" {
+			msg += output.Tree + "\n"
+		}
+		return msg, nil
 	case "pause":
-		// commands.Pause()
+		return "Pausa omitida", nil
 	case "rep":
-		commands.Fn_Rep(parametros)
+		output, err := commands.Fn_Rep(parametros)
+		return output, err
 	default:
-		utils.ShowMessage(fmt.Sprintf("Comando '%s' no reconocido.", comando), true)
+		return "", fmt.Errorf("comando '%s' no reconocido", comando)
+	}
+}
+
+func AnalyzeExistCommand(comando string) bool {
+	switch comando {
+	case "mkdisk", "rmdisk", "fdisk", "mount", "unmount", "mkfs", "login", "logout",
+		"mkgrp", "rmgrp", "mkusr", "rmusr", "mkfile", "cat", "mkdir", "find", "pause", "rep":
+		return true
+	default:
+		return false
 	}
 }

@@ -4,51 +4,43 @@ import (
 	globals "MIA_PI_202001151_1VAC1S2025/manager/global"
 	Structs "MIA_PI_202001151_1VAC1S2025/manager/structs"
 	"MIA_PI_202001151_1VAC1S2025/manager/utils"
-	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
 
 // rmdisk -driveletter=<letter>
-func Fn_rmdisk(params string) {
+func Fn_rmdisk(params string) (string, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-driveletter": {Required: true},
 	}
+
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return "", err
 	}
+
 	driveLetter := strings.ToUpper(parsed["-driveletter"])
-	utils.ShowMessage("Desea eliminar el disco "+driveLetter+"?\nS: para reemplazar\nN: para cancelar", true)
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print(">>> ")
-	scanner.Scan()
-	response := strings.TrimSpace(scanner.Text())
-	if strings.ToUpper(response) != "S" {
-		utils.ShowMessage("Operación cancelada por el usuario.", false)
-		return
+
+	// Validación de letra
+	if len(driveLetter) != 1 || driveLetter[0] < 'A' || driveLetter[0] > 'Z' {
+		return "", errors.New("la letra de unidad debe ser una sola letra entre A y Z")
 	}
-	Rmdisk(driveLetter)
+
+	return rmdisk(driveLetter)
 }
 
-func Rmdisk(driveLetter string) {
-	driveLetter = strings.ToUpper(driveLetter)
-	if len(driveLetter) != 1 || driveLetter[0] < 'A' || driveLetter[0] > 'Z' {
-		utils.ShowMessage("La letra de unidad debe ser una sola letra entre A y Z.", true)
-		return
+func rmdisk(driveLetter string) (string, error) {
+	fileName := fmt.Sprintf("%s%s.dsk", globals.PathDisks, driveLetter)
+
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		return "", fmt.Errorf("el disco [%s] no existe", driveLetter)
 	}
-	fileName := fmt.Sprintf(globals.PathDisks+"%s.dsk", driveLetter)
-	_, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		utils.ShowMessage(fmt.Sprintf("El disco [%s] no existe.", driveLetter), true)
-		return
+
+	if err := os.Remove(fileName); err != nil {
+		return "", fmt.Errorf("no se pudo eliminar el disco [%s]: %v", driveLetter, err)
 	}
-	err = os.Remove(fileName)
-	if err != nil {
-		utils.ShowMessage(fmt.Sprintf("No se pudo eliminar el disco [%s]: %v", driveLetter, err), true)
-		return
-	}
-	utils.ShowMessage(fmt.Sprintf("Disco [%s] eliminado exitosamente.", driveLetter), false)
+
+	return fmt.Sprintf("Disco [%s] eliminado exitosamente", driveLetter), nil
 }

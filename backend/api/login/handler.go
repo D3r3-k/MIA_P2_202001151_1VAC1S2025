@@ -36,7 +36,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := commands.Fn_Login("-user=" + loginReq.Username + " -pass=" + loginReq.Password + " -id=" + loginReq.PartitionID)
+	res, err := commands.Fn_Login("-user=" + loginReq.Username + " -pass=" + loginReq.Password + " -id=" + loginReq.PartitionID)
+	if err != nil {
+		http.Error(w, "Error processing login request: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	if !res {
 		http.Error(w, "Login failed", http.StatusUnauthorized)

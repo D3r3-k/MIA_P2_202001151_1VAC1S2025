@@ -13,16 +13,23 @@ import (
 )
 
 type FindResponse struct {
-	Name     string         `json:"Name"`
-	Type     string         `json:"Type"` // Folder o File
-	Path     string         `json:"Path"`
-	Size     string         `json:"Size,omitempty"`
-	Children []FindResponse `json:"Children,omitempty"`
+	Name        string         `json:"Name"`
+	Type        string         `json:"Type"` // Folder o File
+	Path        string         `json:"Path"`
+	Size        string         `json:"Size,omitempty"`
+	Permissions string         `json:"Permissions"`
+	Children    []FindResponse `json:"Children,omitempty"`
 }
 
-func Fn_Find(params string) ([]FindResponse, error) {
+type FindResult struct {
+	Tree   string        // Árbol representado como string
+	Object *FindResponse // Objeto raíz estructurado
+	Error  error         // Error si ocurre
+}
+
+func Fn_Find(params string) FindResult {
 	if globals.LoginSession.User == "" {
-		return nil, fmt.Errorf("debe iniciar sesión primero")
+		return FindResult{Error: fmt.Errorf("debe iniciar sesión primero")}
 	}
 
 	paramDefs := map[string]Structs.ParamDef{
@@ -31,7 +38,7 @@ func Fn_Find(params string) ([]FindResponse, error) {
 	}
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
-		return nil, err
+		return FindResult{Error: err}
 	}
 
 	startPath := parsed["-path"]
@@ -39,27 +46,30 @@ func Fn_Find(params string) ([]FindResponse, error) {
 
 	part := utils.GetPartitionById(string(globals.LoginSession.PartitionID[:]))
 	if part == nil {
-		return nil, fmt.Errorf("la partición de la sesión no está montada")
+		return FindResult{Error: fmt.Errorf("la partición de la sesión no está montada")}
 	}
 
+	// Preparar regex
 	regexPattern := "^" + strings.ReplaceAll(strings.ReplaceAll(namePattern, ".", `\.`), "*", ".*")
 	regexPattern = strings.ReplaceAll(regexPattern, "?", ".") + "$"
 	regex, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return nil, fmt.Errorf("patrón inválido: %s", namePattern)
+		return FindResult{Error: fmt.Errorf("patrón inválido: %s", namePattern)}
 	}
 
+	// Abrir disco
 	drive := strings.ToUpper(string(part.Id[0]))
 	diskPath := globals.PathDisks + drive + ".dsk"
 	file, err := utils.OpenFile(diskPath)
 	if err != nil {
-		return nil, fmt.Errorf("no se pudo abrir el disco: %s", diskPath)
+		return FindResult{Error: fmt.Errorf("no se pudo abrir el disco: %s", diskPath)}
 	}
 	defer file.Close()
 
+	// Leer superbloque
 	var sb Structs.Superblock
 	if err := utils.ReadObject(file, &sb, int64(part.Start)); err != nil {
-		return nil, fmt.Errorf("no se pudo leer el superbloque")
+		return FindResult{Error: fmt.Errorf("no se pudo leer el superbloque")}
 	}
 
 	inodoInicio := int32(0)
@@ -71,18 +81,19 @@ func Fn_Find(params string) ([]FindResponse, error) {
 			}
 			ok, childInode := utils.SearchDirectoryEntry(file, &sb, inodoInicio, dir)
 			if !ok {
-				return nil, fmt.Errorf("no existe el directorio: %s", dir)
+				return FindResult{Error: fmt.Errorf("no existe el directorio: %s", dir)}
 			}
 			inodoInicio = childInode
 		}
 	}
 
-	result := []FindResponse{}
-	rootResp := buildFindTree(file, &sb, inodoInicio, startPath, regex)
-	if rootResp != nil {
-		result = append(result, *rootResp)
+	root := buildFindTree(file, &sb, inodoInicio, startPath, regex)
+	if root == nil {
+		return FindResult{Tree: "", Object: nil, Error: nil}
 	}
-	return result, nil
+
+	treeStr := buildTreeString(*root, "", true)
+	return FindResult{Tree: treeStr, Object: root, Error: nil}
 }
 
 func buildFindTree(file *os.File, sb *Structs.Superblock, inodeNum int32, path string, regex *regexp.Regexp) *FindResponse {
@@ -103,15 +114,15 @@ func buildFindTree(file *os.File, sb *Structs.Superblock, inodeNum int32, path s
 		nodeName = "/"
 	}
 
-	// Evaluar si debe incluirse por nombre
 	if nodeName != "/" && !regex.MatchString(nodeName) {
 		return nil
 	}
 
 	resp := FindResponse{
-		Name: nodeName,
-		Path: path,
-		Type: "File",
+		Name:        nodeName,
+		Path:        path,
+		Permissions: string(inode.I_perm[:3]),
+		Type:        "File",
 	}
 
 	if inode.I_type[0] == '0' {
@@ -120,7 +131,6 @@ func buildFindTree(file *os.File, sb *Structs.Superblock, inodeNum int32, path s
 		resp.Size = strconv.Itoa(int(inode.I_size)) + " B"
 	}
 
-	// Si es carpeta, buscar hijos
 	if inode.I_type[0] == '0' {
 		var hijos []FindResponse
 		for i := 0; i < 14; i++ {
@@ -138,11 +148,7 @@ func buildFindTree(file *os.File, sb *Structs.Superblock, inodeNum int32, path s
 				if nombre == "" || nombre == "." || nombre == ".." || entry.B_inodo == -1 {
 					continue
 				}
-				childPath := path
-				if !strings.HasSuffix(childPath, "/") {
-					childPath += "/"
-				}
-				childPath += nombre
+				childPath := strings.TrimSuffix(path, "/") + "/" + nombre
 				child := buildFindTree(file, sb, entry.B_inodo, childPath, regex)
 				if child != nil {
 					hijos = append(hijos, *child)
@@ -153,5 +159,26 @@ func buildFindTree(file *os.File, sb *Structs.Superblock, inodeNum int32, path s
 			resp.Children = hijos
 		}
 	}
+
 	return &resp
+}
+
+func buildTreeString(node FindResponse, prefix string, isLast bool) string {
+	branch := "└── "
+	if !isLast {
+		branch = "├── "
+	}
+	line := fmt.Sprintf("%s%s%s\t\t[%s]", prefix, branch, node.Name, node.Permissions)
+	lines := []string{line}
+
+	for i, child := range node.Children {
+		childPrefix := prefix
+		if isLast {
+			childPrefix += "    "
+		} else {
+			childPrefix += "│   "
+		}
+		lines = append(lines, buildTreeString(child, childPrefix, i == len(child.Children)-1))
+	}
+	return strings.Join(lines, "\n")
 }

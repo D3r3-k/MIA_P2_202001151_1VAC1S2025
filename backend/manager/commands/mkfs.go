@@ -5,11 +5,12 @@ import (
 	Structs "MIA_PI_202001151_1VAC1S2025/manager/structs"
 	"MIA_PI_202001151_1VAC1S2025/manager/utils"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"strings"
 )
 
-func Fn_Mkfs(params string) {
+func Fn_Mkfs(params string) (string, error) {
 	paramDefs := map[string]Structs.ParamDef{
 		"-id":   {Required: true},
 		"-type": {Required: false, Default: "full"},
@@ -19,7 +20,7 @@ func Fn_Mkfs(params string) {
 	parsed, err := utils.ParseParameters(params, paramDefs)
 	if err != nil {
 		utils.ShowMessage(err.Error(), true)
-		return
+		return "", err
 	}
 
 	id := parsed["-id"]
@@ -28,21 +29,21 @@ func Fn_Mkfs(params string) {
 
 	if fsType != "full" {
 		utils.ShowMessage("Solo se permite formateo <full> actualmente.", true)
-		return
+		return "", fmt.Errorf("tipo de formateo no soportado: %s", fsType)
 	}
 	if fs != "2fs" && fs != "3fs" {
 		utils.ShowMessage("Solo se permite sistema de archivos <2fs> o <3fs>.", true)
-		return
+		return "", fmt.Errorf("solo se permite sistema de archivos <2fs> o <3fs>")
 	}
 
-	Mkfs(id, fs)
+	return Mkfs(id, fs)
 }
 
 // Mkfs -id=<id> [-type=full] [-fs=2fs|3fs]
-func Mkfs(id string, fs string) {
+func Mkfs(id string, fs string) (string, error) {
 	if globals.LoginSession.User != "" {
 		utils.ShowMessage("Debe cerrar sesión antes de formatear un disco.", true)
-		return
+		return "", fmt.Errorf("sesión activa, cierre sesión antes de formatear")
 	}
 	drive := strings.ToUpper(string(id[0]))
 	path := globals.PathDisks + drive + ".dsk"
@@ -50,14 +51,14 @@ func Mkfs(id string, fs string) {
 	file, err := utils.OpenFile(path)
 	if err != nil {
 		utils.ShowMessage("No se pudo abrir el disco: "+path, true)
-		return
+		return "", fmt.Errorf("no se pudo abrir el disco: %s", path)
 	}
 	defer file.Close()
 
 	var mbr Structs.MBR
 	if err := utils.ReadObject(file, &mbr, 0); err != nil {
 		utils.ShowMessage("No se pudo leer el MBR.", true)
-		return
+		return "", fmt.Errorf("no se pudo leer el MBR: %v", err)
 	}
 
 	var part *Structs.Partition
@@ -70,7 +71,7 @@ func Mkfs(id string, fs string) {
 	}
 	if part == nil {
 		utils.ShowMessage("mkfs Partición no montada o no existe con ID: "+id, true)
-		return
+		return "", fmt.Errorf("partición no montada o no existe con ID: %s", id)
 	}
 
 	partSize := part.Size
@@ -85,15 +86,15 @@ func Mkfs(id string, fs string) {
 	}
 	n = int32(n)
 	if fs == "2fs" {
-		mkfs_ext2(n, *part, file)
+		return mkfs_ext2(n, *part, file)
 	} else {
 		n = (partSize - SuperBlockSize - JournSize) / (4 + InodoSize + (3 * blockSize))
-		mkfs_ext3(n, *part, file)
+		return mkfs_ext3(n, *part, file)
 	}
 }
 
 // mkfs -type=full -fs=2fs -id=<id>
-func mkfs_ext2(n int32, part Structs.Partition, file *os.File) {
+func mkfs_ext2(n int32, part Structs.Partition, file *os.File) (string, error) {
 	// 0. calcular tamaños
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 	blockSize := int32(binary.Size(Structs.Folderblock{}))
@@ -194,10 +195,11 @@ func mkfs_ext2(n int32, part Structs.Partition, file *os.File) {
 
 	// Terminado
 	utils.ShowMessage("Sistema de archivos EXT2 creado exitosamente en la partición: "+string(part.Id[:]), false)
+	return "Partición " + string(part.Id[:]) + " formateada exitosamente con sistema de archivos EXT2", nil
 }
 
 // mkfs -type=full -fs=3fs -id=<id>
-func mkfs_ext3(n int32, part Structs.Partition, file *os.File) {
+func mkfs_ext3(n int32, part Structs.Partition, file *os.File) (string, error) {
 	// 0. calcular tamaños
 	inodoSize := int32(binary.Size(Structs.Inode{}))
 	blockSize := int32(binary.Size(Structs.Folderblock{}))
@@ -314,4 +316,5 @@ func mkfs_ext3(n int32, part Structs.Partition, file *os.File) {
 	utils.WriteObject(file, sb, int64(part.Start))
 
 	utils.ShowMessage("Sistema de archivos EXT3 creado exitosamente en la partición: "+string(part.Id[:]), false)
+	return "Partición " + string(part.Id[:]) + " formateada exitosamente con sistema de archivos EXT3", nil
 }

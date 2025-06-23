@@ -34,9 +34,9 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ejecutar el comando find
-	finds, err := commands.Fn_Find("-path=" + req.Path + " -name=*")
-	if err != nil {
-		http.Error(w, "Error processing find command: "+err.Error(), http.StatusInternalServerError)
+	output := commands.Fn_Find("-path=" + req.Path + " -name=*")
+	if output.Error != nil {
+		http.Error(w, "Error processing find command: "+output.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -60,7 +60,7 @@ func FindHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	formatted := FindResponse{
-		Root: convertFindResponse(finds[0].Children),
+		Root: convertFindResponse(output.Object.Children),
 	}
 
 	w.WriteHeader(http.StatusOK)
