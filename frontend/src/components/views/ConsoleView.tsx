@@ -6,7 +6,7 @@ import CodeEditor from "@/components/CodeEditor/CodeEditor";
 import { useMia } from "@/hooks/useMia";
 
 export default function ConsoleView() {
-  const { isAuthenticated } = useMia();
+  const { isAuthenticated, activateToast } = useMia();
   const { executeCommand } = useFetchs();
 
   const [consoleInput, setConsoleInput] = useState<string>("");
@@ -17,6 +17,10 @@ export default function ConsoleView() {
   };
 
   const handleExecuteCommand = async () => {
+    if (isAuthenticated) {
+      activateToast("error", "No puedes ejecutar comandos mientras estás autenticado.", "Consola de Discos");
+      return;
+    };
     const output = await executeCommand(consoleInput);
     setResponse(output);
   };
