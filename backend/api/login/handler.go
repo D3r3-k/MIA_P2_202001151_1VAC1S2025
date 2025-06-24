@@ -36,6 +36,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Si existe una sesión activa, se cierra antes de iniciar una nueva
+	if globals.LoginSession.User != "" {
+		commands.Fn_Logout("")
+	}
+
 	res, err := commands.Fn_Login("-user=" + loginReq.Username + " -pass=" + loginReq.Password + " -id=" + loginReq.PartitionID)
 	if err != nil {
 		http.Error(w, "Error processing login request: "+err.Error(), http.StatusInternalServerError)

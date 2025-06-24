@@ -216,41 +216,47 @@ export default function ContentPartition() {
                     {/* Content */}
                     <div className="p-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {filteredItems.map((item) => {
-                                const ItemIcon = getFileIcon(item);
-                                return (
-                                    <div
-                                        key={item.ID}
-                                        className="p-4 rounded-lg border transition-all duration-200 hover:scale-105 bg-gray-700/30 border-gray-600/50 hover:bg-gray-700/50 cursor-pointer"
-                                        onClick={() => {
-                                            if (item.Type === "folder") {
-                                                navigateToFolder(item.Name);
-                                            } else {
-                                                viewFile(item.Name);
-                                            }
-                                        }}
-                                    >
-                                        <div className="text-center space-y-2">
-                                            {ItemIcon ? (
-                                                <ItemIcon className={`w-8 h-8 mx-auto ${item.Type === "folder" ? "text-blue-400" : "text-corinto-400"}`} />
-                                            ) : (
-                                                <span className="w-8 h-8 mx-auto inline-block" />
-                                            )}
-                                            <div>
-                                                <p
-                                                    className="text-white text-sm font-medium truncate"
-                                                    title={item.Name}
-                                                >
-                                                    {item.Name}
-                                                </p>
-                                                {item.Size && (
-                                                    <p className="text-gray-400 text-xs">{item.Size}</p>
+                            {filteredItems.length === 0 ? (
+                                <div className="col-span-full text-center text-gray-400 py-8">
+                                    Sin contenido
+                                </div>
+                            ) : (
+                                filteredItems.map((item) => {
+                                    const ItemIcon = getFileIcon(item);
+                                    return (
+                                        <div
+                                            key={item.ID}
+                                            className="p-4 rounded-lg border transition-all duration-200 hover:scale-105 bg-gray-700/30 border-gray-600/50 hover:bg-gray-700/50 cursor-pointer"
+                                            onClick={() => {
+                                                if (item.Type === "folder") {
+                                                    navigateToFolder(item.Name);
+                                                } else {
+                                                    viewFile(item.Name);
+                                                }
+                                            }}
+                                        >
+                                            <div className="text-center space-y-2">
+                                                {ItemIcon ? (
+                                                    <ItemIcon className={`w-8 h-8 mx-auto ${item.Type === "folder" ? "text-blue-400" : "text-corinto-400"}`} />
+                                                ) : (
+                                                    <span className="w-8 h-8 mx-auto inline-block" />
                                                 )}
+                                                <div>
+                                                    <p
+                                                        className="text-white text-sm font-medium truncate"
+                                                        title={item.Name}
+                                                    >
+                                                        {item.Name}
+                                                    </p>
+                                                    {item.Size && (
+                                                        <p className="text-gray-400 text-xs">{item.Size}</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>

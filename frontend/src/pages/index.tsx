@@ -1,3 +1,4 @@
+import Sidebar from "@/components/Sidebar/Sidebar";
 import AppView from "@/components/views/AppView";
 import { Route } from "@/types/GlobalTypes";
 
@@ -8,5 +9,8 @@ export default function Home({
   route: Route;
   setRoute: (route: Route) => void;
 }) {
-  return <AppView route={route} setRoute={setRoute} />;
+  return <>
+    <Sidebar activeRoute={route} setRoute={setRoute} />
+    <AppView route={route} setRoute={setRoute} />
+  </>
 }

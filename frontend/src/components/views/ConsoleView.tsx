@@ -3,8 +3,10 @@ import { FileText, FolderOpen, Save, Terminal, Trash2, Play } from "lucide-react
 import Head from "next/head";
 import useFetchs from "@/hooks/useFetchs";
 import CodeEditor from "@/components/CodeEditor/CodeEditor";
+import { useMia } from "@/hooks/useMia";
 
 export default function ConsoleView() {
+  const { isAuthenticated } = useMia();
   const { executeCommand } = useFetchs();
 
   const [consoleInput, setConsoleInput] = useState<string>("");
@@ -146,20 +148,27 @@ export default function ConsoleView() {
               </h2>
             </div>
             <div className="p-0 flex gap-4">
-              <CodeEditor editable onChange={handleConsoleInputChange} value={consoleInput} size="small" />
+              <CodeEditor editable={!isAuthenticated} onChange={handleConsoleInputChange} value={consoleInput} size="small" />
               <div className="mt-2">
                 <button
                   onClick={handleExecuteCommand}
                   className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white font-semibold shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:hover:bg-gradient-to-r disabled:from-green-500 disabled:to-green-700"
                   title="Ejecutar Comando"
                   aria-label="Ejecutar Comando"
-                  disabled={!consoleInput.trim()}
+                  disabled={!consoleInput.trim() || isAuthenticated}
                 >
                   <Play className="w-5 h-5" />
                   Ejecutar
                 </button>
               </div>
             </div>
+            {
+              isAuthenticated && (
+                <p className="text-red-400 text-sm mt-2">
+                  Debes cerrar sesión para ejecutar comandos en la consola.
+                </p>
+              )
+            }
           </div>
         </div>
       </main>

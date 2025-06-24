@@ -49,7 +49,7 @@ export default function Sidebar({
                     </h3>
                     <nav className="space-y-2">
                         {menuItems.map(({ icon: Icon, label, route }, index) => {
-                            if (route === "login" && isAuthenticated) return null;
+                            if ((route !== "/" && route !== "login" && !isAuthenticated) || (route == "login" && isAuthenticated)) return null;
 
                             const isActive = activeRoute === route;
                             const baseClasses = "w-full group flex items-center px-3 py-2.5 rounded-xl text-left transition-all duration-200 relative cursor-pointer";
